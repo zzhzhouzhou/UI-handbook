@@ -441,7 +441,7 @@ function ClockDemo() {
             <span className={cn("block w-px bg-zinc-900 dark:bg-white", i % 3 === 0 ? "h-3" : "h-1.5 opacity-40")} />
           </span>
         ))}
-        <span className="absolute left-1/2 top-1/2 h-11 w-1 origin-bottom -translate-x-1/2 -translate-y-full rounded-full bg-zinc-900 dark:bg-white" style={{ transform: `translate(-50%,-100%) rotate(${h * 30}deg)`, transformOrigin: "50% 100%" }} />
+        <span className="absolute left-1/2 top-1/2 h-11 w-1 rounded-full bg-zinc-900 dark:bg-white" style={{ transform: `translate(-50%,-100%) rotate(${h * 30}deg)`, transformOrigin: "50% 100%" }} />
         <span className="absolute left-1/2 top-1/2 h-16 w-0.5 origin-bottom rounded-full bg-zinc-900 dark:bg-white" style={{ transform: `translate(-50%,-100%) rotate(${m * 6}deg)`, transformOrigin: "50% 100%" }} />
         <span className="absolute left-1/2 top-1/2 h-[68px] w-px origin-bottom bg-red-500" style={{ transform: `translate(-50%,-100%) rotate(${s * 6}deg)`, transformOrigin: "50% 100%" }} />
         <span className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-zinc-900 dark:bg-white" />

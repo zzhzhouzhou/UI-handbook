@@ -284,7 +284,7 @@ export default function App() {
                 <p className="mt-2 text-zinc-700 dark:text-zinc-300">
                   zzh_zhou · <span className="font-medium">Garbage Human Studio</span>
                 </p>
-                <p className="mt-1 max-w-md text-xs leading-6 text-zinc-400">本站全部组件均以 React + Tailwind CSS 手写实现，不依赖任何 UI 组件库；示例代码可直接复制到你的项目中使用。</p>
+                <p className="mt-1 max-w-md text-xs leading-6 text-zinc-400">本项目由 AI 辅助开发。全部组件均以 React + Tailwind CSS 手写实现，不依赖任何 UI 组件库；示例代码可直接复制到你的项目中使用。</p>
               </div>
               <div className="flex items-center gap-2">
                 <a href="https://github.com/zzhzhouzhou/UI-handbook" target="_blank" rel="noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-500 transition hover:border-zinc-400 hover:text-zinc-900 dark:border-zinc-800 dark:hover:border-zinc-600 dark:hover:text-white" aria-label="项目主页（GitHub）" title="项目主页">
