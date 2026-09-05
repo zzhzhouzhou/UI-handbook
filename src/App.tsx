@@ -3,7 +3,8 @@ import { NAV, type NavGroup } from "./nav";
 import { Icon, Kbd } from "./components/primitives";
 import { cn } from "./utils/cn";
 import Foundations from "./sections/Foundations";
-import Basics from "./sections/Basics";
+import General from "./sections/General";
+import Forms from "./sections/Forms";
 import Navigation from "./sections/Navigation";
 import Feedback from "./sections/Feedback";
 import DataDisplay from "./sections/DataDisplay";
@@ -248,14 +249,15 @@ export default function App() {
           </div>
 
           <Foundations />
-          <Basics />
+          <General />
+          <Forms />
           <Navigation />
           <Feedback />
           <DataDisplay />
           <Motion />
           <Advanced />
-          <Patterns />
           <Standards />
+          <Patterns />
 
           {/* 使用指南 */}
           <div className="mt-24 border-t border-zinc-200 pt-12 dark:border-zinc-800">

@@ -122,6 +122,19 @@ export const Icon = {
       <path d="M2 12h20" />
     </svg>
   ),
+  Eye: (p: IconProps) => (
+    <svg {...base(p)} className={p.className}>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+  EyeOff: (p: IconProps) => (
+    <svg {...base(p)} className={p.className}>
+      <path d="m2 2 20 20" />
+      <path d="M6.7 6.7A10.9 10.9 0 0 0 2 12s3.5 7 10 7c2.1 0 4-.6 5.6-1.7M9.9 4.3A10.9 10.9 0 0 1 22 12s-1.2 2.5-3.3 4.3" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </svg>
+  ),
   Sun: (p: IconProps) => (
     <svg {...base(p)} className={p.className}>
       <circle cx="12" cy="12" r="4" />

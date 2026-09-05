@@ -519,7 +519,7 @@ export default function Motion() {
     <section>
       <SectionHeader
         id="motion"
-        index="06"
+        index="07"
         title="指针交互与背景"
         en="Pointer Interactions & Backgrounds"
         intro="这一章是「让界面活起来」的部分：跟随鼠标的背景、音频律动条、磁性按钮、3D 倾斜、粒子场……它们的共同原则是：用 CSS 变量传递坐标、直接操作 DOM style 而不是 setState、只动 transform / opacity、用 requestAnimationFrame 节流。装饰性动效要克制，一个页面最多一两处。"

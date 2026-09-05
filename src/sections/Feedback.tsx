@@ -494,7 +494,7 @@ export default function Feedback() {
     <section>
       <SectionHeader
         id="feedback"
-        index="04"
+        index="05"
         title="反馈与覆盖层"
         en="Feedback & Overlays"
         intro="反馈让用户知道「系统听到了、正在处理、结果如何」。从轻到重：Toast（不打断）→ Alert / Banner（页面内）→ Popover（局部）→ Drawer（侧边）→ Modal（必须处理）。选择最轻的能完成任务的方式。"

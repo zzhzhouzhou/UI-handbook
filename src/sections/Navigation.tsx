@@ -596,15 +596,60 @@ function BottomTabsDemo() {
   );
 }
 
+
+function NotificationPanelDemo() {
+  const [open, setOpen] = useState(false);
+  const [read, setRead] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  const items = [
+    ["评论", "Li Hua 评论了你的组件：按钮的焦点环可以再明显一点。", "5 分钟前", !read],
+    ["系统", "你的组件库已通过设计走查，可以发布到生产环境。", "1 小时前", !read],
+    ["关注", "Wang Fang 收藏了你的「命令面板」组件。", "昨天", false],
+  ] as const;
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen(!open)} aria-label="通知" aria-expanded={open} className="relative grid h-10 w-10 place-items-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
+        <Icon.Bell />
+        {!read && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-zinc-950" />}
+      </button>
+      {open && (
+        <div role="dialog" aria-label="通知列表" className="absolute right-0 z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] animate-scale-in overflow-hidden rounded-xl border border-zinc-200 bg-white text-left shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+          <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-2.5 dark:border-zinc-800">
+            <span className="text-sm font-medium">通知</span>
+            <button onClick={() => setRead(true)} className="text-xs text-zinc-400 transition hover:text-zinc-900 dark:hover:text-white">全部已读</button>
+          </div>
+          {items.map(([tag, text, time, unread]) => (
+            <div key={text} className={cn("flex gap-3 border-b border-zinc-100 px-4 py-3 text-sm last:border-0 dark:border-zinc-800", unread && "bg-zinc-50 dark:bg-zinc-800/40")}>
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-900 dark:bg-white" style={{ opacity: unread ? 1 : 0 }} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium">{tag}</span>
+                  <span className="text-[10px] text-zinc-400">{time}</span>
+                </div>
+                <p className="mt-0.5 text-xs leading-5 text-zinc-500 dark:text-zinc-400">{text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Navigation() {
   return (
     <section>
       <SectionHeader
         id="navigation"
-        index="03"
+        index="04"
         title="导航"
         en="Navigation"
-        intro="导航告诉用户「我在哪里、能去哪里、怎么回去」。极简风格的导航依靠字重与颜色的对比来区分当前项，而不是彩色高亮块。以下包含从顶栏到 ⌘K 命令面板、macOS Dock 等进阶模式。"
+        intro="导航告诉用户「我在哪里、能去哪里、怎么回去」。从顶栏、标签页、面包屑到 ⌘K 命令面板、macOS Dock 与移动端底部标签栏——桌面与移动端各有自己的导航惯例，但内核相同：当前项用颜色与字重区分，而不是彩色高亮块；每一层入口都保持可预期。这一章还包含通知面板这类「以导航为入口」的衍生组件。"
         icon={<Icon.Compass />}
       />
 
@@ -920,6 +965,35 @@ const hoverable = matchMedia("(hover: hover)").matches;
       >
         <BottomTabsDemo />
       </Showcase>
+
+      <Showcase
+        id="notification-panel"
+        title="通知面板"
+        en="Notifications"
+        level="进阶"
+        description="铃铛按钮 + 下拉通知列表：未读红点、未读项浅底高亮、「全部已读」一键清除。点击外部自动关闭。"
+        usage={["后台系统的消息中心入口。", "配合未读数角标与红点使用。"]}
+        points={["铃铛按钮 aria-expanded；未读红点用 ring 与底色同色「挖空」。", "面板 absolute right-0 对齐按钮右缘，max-w 限制防止小屏溢出。", "未读项用浅底色 + 左侧圆点双重标识；「全部已读」只改一个 state。", "生产环境用轮询 / WebSocket 拉取新通知，未读数交给 React Query 缓存。"]}
+        a11y={["未读红点纯装饰加 aria-hidden；数量信息用 sr-only 文案补充。", "面板 role=\"dialog\" + aria-label；Esc 关闭并归还焦点。"]}
+        previewClassName="overflow-visible"
+        code={`const [open, setOpen] = useState(false);
+<div ref={ref} className="relative">
+  <button aria-expanded={open} aria-label="通知" onClick={() => setOpen(!open)}
+    className="relative grid h-10 w-10 place-items-center rounded-lg border">
+    <Bell />
+    {hasUnread && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />}
+  </button>
+  {open && (
+    <div role="dialog" aria-label="通知列表"
+      className="absolute right-0 z-20 mt-2 w-80 rounded-xl border bg-white shadow-xl">
+      {items.map(it => <div className="flex gap-3 px-4 py-3">{/* … */}</div>)}
+    </div>
+  )}
+</div>`}
+      >
+        <NotificationPanelDemo />
+      </Showcase>
+
     </section>
   );
 }

@@ -599,15 +599,51 @@ function MasonryDemo() {
   );
 }
 
+
+function DescriptionListDemo() {
+  const rows = [
+    ["订单编号", "ORD-20260905-0042"],
+    ["下单时间", "2026-09-05 14:32"],
+    ["支付方式", "微信支付"],
+    ["收货地址", "上海市徐汇区××路 88 号 3F"],
+    ["发票", "电子普通发票"],
+  ];
+  return (
+    <dl className="w-full max-w-md divide-y divide-zinc-100 rounded-xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
+      {rows.map(([k, v]) => (
+        <div key={k} className="flex gap-4 px-4 py-2.5 text-sm">
+          <dt className="w-20 shrink-0 text-zinc-400">{k}</dt>
+          <dd className="min-w-0 flex-1 font-medium">{v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function BlockquoteDemo() {
+  return (
+    <div className="w-full max-w-md space-y-4">
+      <blockquote className="border-l-2 border-zinc-900 pl-4 text-sm leading-7 text-zinc-600 dark:border-zinc-100 dark:text-zinc-400">
+        好的设计是尽可能少的设计。每个元素都应该有存在的理由，删到不能再删，剩下的才是本质。
+        <footer className="mt-2 text-xs text-zinc-400">— Dieter Rams</footer>
+      </blockquote>
+      <blockquote className="rounded-xl bg-zinc-50 p-4 text-sm leading-7 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+        「简单比复杂更难，但值得。」
+        <footer className="mt-2 text-xs text-zinc-400">— Steve Jobs</footer>
+      </blockquote>
+    </div>
+  );
+}
+
 export default function DataDisplay() {
   return (
     <section>
       <SectionHeader
         id="data"
-        index="05"
+        index="06"
         title="数据展示"
         en="Data Display"
-        intro="展示类组件的目标是让信息「一眼可读」。原则：对齐（数字右对齐并使用等宽数字）、分组（用间距而不是线条）、层级（标题 / 正文 / 辅助三级）。表格与图表尽量去掉多余的边框和网格线。"
+        intro="展示类组件的目标是让信息「一眼可读」。原则：对齐（数字右对齐并使用等宽数字）、分组（用间距而不是线条）、层级（标题 / 正文 / 辅助三级）。这一章覆盖从卡片、表格、树形视图到看板拖放、日历热力图、瀑布流的结构化展示场景，也包含代码块、聊天气泡、描述列表与引用块这类内容型组件。表格与图表尽量去掉多余的边框和网格线——去掉的每一条线，都会让剩下的信息更清晰。"
         icon={<Icon.BarChart />}
       />
 
@@ -781,6 +817,25 @@ items.forEach((it, i) => cols[i % n].push(it));`}
       >
         <MasonryDemo />
       </Showcase>
+
+      <Showcase id="description-list" title="描述列表" en="Description List" description="键值对形式的详情展示：订单信息、商品参数、操作日志。用原生 dl / dt / dd 语义标签，左侧键固定宽度，右侧值可换行。" usage={["订单详情、商品参数、配置信息、日志摘要。", "字段多且只读的场景——需要编辑时改用表单。"]} points={["原生 <dl> <dt> <dd> 标签自带「描述列表」语义。", "dt 定宽 text-zinc-400，dd flex-1 min-w-0 保证长值可换行不挤压。", "行间用 divide-y 极淡分隔，外层一张卡片收口。", "字段过多时分栏展示（md:grid-cols-2），重要字段放前面。"]} a11y={["dl/dt/dd 的语义关联对读屏软件友好，优于 div 模拟。"]} code={`<dl className="divide-y divide-zinc-100 rounded-xl border bg-white">
+  {rows.map(([k, v]) => (
+    <div key={k} className="flex gap-4 px-4 py-2.5 text-sm">
+      <dt className="w-20 shrink-0 text-zinc-400">{k}</dt>
+      <dd className="min-w-0 flex-1 font-medium">{v}</dd>
+    </div>
+  ))}
+</dl>`}>
+        <DescriptionListDemo />
+      </Showcase>
+
+      <Showcase id="blockquote" title="引用块" en="Blockquote" description="引用他人观点或文案的两种形态：左侧竖线的经典样式与浅底卡片样式，出处放在 footer 里弱化显示。" usage={["文章引言、用户评价、理念宣言。", "竖线式适合正文内嵌，卡片式适合独立成段。"]} points={["竖线式：border-l-2 + pl-4，线条颜色与文字同一灰阶。", "卡片式：rounded-xl + 浅底色，适合页面里独立呈现的引言。", "出处用 <footer> + 破折号前缀，字号比正文小两级。", "引用本体用原生 <blockquote> 标签保留语义。"]} a11y={["<blockquote> 语义让读屏软件按引用朗读。"]} code={`<blockquote className="border-l-2 border-zinc-900 pl-4 text-sm leading-7 text-zinc-600">
+  引用内容…
+  <footer className="mt-2 text-xs text-zinc-400">— 作者</footer>
+</blockquote>`}>
+        <BlockquoteDemo />
+      </Showcase>
+
     </section>
   );
 }

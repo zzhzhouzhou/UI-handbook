@@ -213,7 +213,7 @@ export default function Patterns() {
     <section>
       <SectionHeader
         id="patterns"
-        index="08"
+        index="10"
         title="模式与原则"
         en="Patterns & Principles"
         intro="组件是词汇，模式是语法。这一章讲如何把组件组合成好用的页面：布局骨架、响应式策略、表单体验、深色模式方法论，以及一份可以直接拿去走查的设计清单。"

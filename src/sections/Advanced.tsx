@@ -576,7 +576,7 @@ export default function Advanced() {
     <section>
       <SectionHeader
         id="advanced"
-        index="07"
+        index="08"
         title="文字、滚动与高级模式"
         en="Text · Scroll · Advanced Patterns"
         intro="跑马灯、打字机、数字滚动这类文字动效，滚动驱动的显现与堆叠，以及拖拽排序、左滑删除、主题切换转场等高级交互模式。它们大多数只需要几十行代码，但能显著提升产品的「完成度」。"
