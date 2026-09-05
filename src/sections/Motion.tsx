@@ -342,14 +342,16 @@ function ParticlesDemo() {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const c = ref.current!, ctx = c.getContext("2d")!;
-    let w = (c.width = c.offsetWidth * devicePixelRatio), h = (c.height = c.offsetHeight * devicePixelRatio);
-    const N = 60;
+    // DPR 封顶 1.5：高倍屏上全屏 canvas 的绘制面积会翻 4 倍，低端设备拖垮帧率
+    const dpr = Math.min(devicePixelRatio, 1.5);
+    let w = (c.width = c.offsetWidth * dpr), h = (c.height = c.offsetHeight * dpr);
+    const N = 44;
     const pts = Array.from({ length: N }, () => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4 }));
     const mouse = { x: -1e3, y: -1e3 };
     const onMove = (e: MouseEvent) => {
       const r = c.getBoundingClientRect();
-      mouse.x = (e.clientX - r.left) * devicePixelRatio;
-      mouse.y = (e.clientY - r.top) * devicePixelRatio;
+      mouse.x = (e.clientX - r.left) * dpr;
+      mouse.y = (e.clientY - r.top) * dpr;
     };
     const onLeave = () => (mouse.x = mouse.y = -1e3);
     c.addEventListener("mousemove", onMove);
@@ -365,20 +367,20 @@ function ParticlesDemo() {
         if (p.x < 0 || p.x > w) p.vx *= -1;
         if (p.y < 0 || p.y > h) p.vy *= -1;
         const dx = mouse.x - p.x, dy = mouse.y - p.y, d = Math.hypot(dx, dy);
-        if (d < 120 * devicePixelRatio) {
+        if (d < 120 * dpr) {
           p.x -= dx * 0.01;
           p.y -= dy * 0.01;
         }
         ctx.fillStyle = `rgba(${col},0.6)`;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 1.5 * devicePixelRatio, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 1.5 * dpr, 0, Math.PI * 2);
         ctx.fill();
       });
       for (let i = 0; i < N; i++)
         for (let j = i + 1; j < N; j++) {
           const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
-          if (d < 110 * devicePixelRatio) {
-            ctx.strokeStyle = `rgba(${col},${(1 - d / (110 * devicePixelRatio)) * 0.25})`;
+          if (d < 110 * dpr) {
+            ctx.strokeStyle = `rgba(${col},${(1 - d / (110 * dpr)) * 0.25})`;
             ctx.lineWidth = devicePixelRatio;
             ctx.beginPath();
             ctx.moveTo(pts[i].x, pts[i].y);
@@ -390,8 +392,8 @@ function ParticlesDemo() {
     };
     draw();
     const ro = new ResizeObserver(() => {
-      w = c.width = c.offsetWidth * devicePixelRatio;
-      h = c.height = c.offsetHeight * devicePixelRatio;
+      w = c.width = c.offsetWidth * dpr;
+      h = c.height = c.offsetHeight * dpr;
     });
     ro.observe(c);
     // 离开视口时暂停 O(N²) 的绘制循环，回到视口再恢复

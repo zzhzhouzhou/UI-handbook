@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { NAV, type NavGroup } from "./nav";
 import { Icon, Kbd } from "./components/primitives";
 import { cn } from "./utils/cn";
@@ -61,7 +61,39 @@ function focusNavSearch(): boolean {
   return target.getClientRects().length > 0;
 }
 
+/** 固定时长的快速滚动：超长页面用原生 smooth 会越来越慢，且懒挂载会改变页面高度导致停不准——逐帧重定位目标位置保证准确到达 */
+function smoothScrollTo(el: HTMLElement, duration = 450) {
+  const start = window.scrollY;
+  const startTime = performance.now();
+  const headerOffset = 80;
+  const step = (now: number) => {
+    const t = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const targetTop = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+    window.scrollTo({ top: start + (targetTop - start) * eased, behavior: "instant" });
+    if (t < 1) requestAnimationFrame(step);
+    else {
+      el.scrollIntoView({ behavior: "instant", block: "start" });
+      // 到达后再校正一次：懒挂载的相邻内容可能仍在改变布局高度
+      setTimeout(() => el.scrollIntoView({ behavior: "instant", block: "start" }), 350);
+    }
+  };
+  requestAnimationFrame(step);
+}
+
 function Sidebar({ q, onSearch, groups, active, onNavigate, autoFocusSearch = false }: { q: string; onSearch: (v: string) => void; groups: NavGroup[]; active: string; onNavigate: () => void; autoFocusSearch?: boolean }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  // 当前浏览的章节实时滚动到侧边栏列表中部
+  useEffect(() => {
+    const container = listRef.current;
+    if (!container) return;
+    const el = container.querySelector<HTMLAnchorElement>(`a[href="#${active}"]`);
+    if (!el) return;
+    container.scrollTo({
+      top: Math.max(0, el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2),
+      behavior: "smooth",
+    });
+  }, [active]);
   return (
     <nav className="flex h-full flex-col">
       <div className="px-4 pb-3">
@@ -81,7 +113,7 @@ function Sidebar({ q, onSearch, groups, active, onNavigate, autoFocusSearch = fa
           </span>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-4 pb-8">
+      <div ref={listRef} className="relative flex-1 overflow-y-auto px-4 pb-8">
         {groups.map((g) => (
           <div key={g.id} className="mb-5">
             <a href={`#${g.id}`} onClick={onNavigate} className="mb-1.5 flex items-baseline gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
@@ -152,6 +184,24 @@ export default function App() {
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
+  }, []);
+
+  // 拦截全站锚点点击：固定 450ms 快速滚动 + 逐帧重定位，替代原生 smooth（长页太慢且停不准）
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement).closest?.("a[href^='#']") as HTMLAnchorElement | null;
+      if (!a) return;
+      const id = decodeURIComponent(a.getAttribute("href")!.slice(1));
+      if (!id) return;
+      const el = document.getElementById(id);
+      if (!el) return;
+      e.preventDefault();
+      history.pushState(null, "", `#${id}`);
+      if (id === "top") window.scrollTo({ top: 0 });
+      else smoothScrollTo(el, 450);
+    };
+    document.addEventListener("click", onClick);
+    return () => document.removeEventListener("click", onClick);
   }, []);
 
   // 移动抽屉打开时锁定背景滚动 + Esc 关闭

@@ -462,15 +462,16 @@ function FabDemo() {
     <div className="relative flex h-64 w-full items-end justify-center pb-4">
       <div className="relative">
         {open && (
-          <div className="absolute bottom-[4.5rem] left-1/2 flex -translate-x-1/2 flex-col items-center gap-2">
+          <div className="absolute bottom-[4.5rem] left-1/2 flex w-max -translate-x-1/2 flex-col items-stretch gap-2">
+            {/* w-max：绝对定位容器的可用宽度只有容器右半边，不收缩会导致文字被挤成竖排 */}
             {actions.map(([t, I], k) => (
               <button
                 key={t}
                 onClick={() => setOpen(false)}
                 style={{ animationDelay: `${k * 40}ms` }}
-                className="flex animate-fade-up items-center gap-2 rounded-full border border-zinc-200 bg-white py-2 pl-3.5 pr-4 text-xs font-medium shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+                className="flex animate-fade-up items-center gap-2.5 whitespace-nowrap rounded-full border border-zinc-200 bg-white py-2.5 pl-4 pr-5 text-sm font-medium shadow-lg transition-transform hover:scale-[1.03] dark:border-zinc-700 dark:bg-zinc-900"
               >
-                <I size={14} className="text-zinc-500" /> {t}
+                <I size={15} className="text-zinc-500" /> {t}
               </button>
             ))}
           </div>

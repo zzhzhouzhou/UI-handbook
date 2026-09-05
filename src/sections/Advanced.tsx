@@ -307,13 +307,14 @@ function ConfettiDemo() {
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
   const fire = () => {
     const c = ref.current!, ctx = c.getContext("2d")!;
-    c.width = c.offsetWidth * devicePixelRatio;
-    c.height = c.offsetHeight * devicePixelRatio;
+    const dpr = Math.min(devicePixelRatio, 1.5);
+    c.width = c.offsetWidth * dpr;
+    c.height = c.offsetHeight * dpr;
     const dark = document.documentElement.classList.contains("dark");
     const cols = dark ? ["#fff", "#d4d4d8", "#a1a1aa", "#71717a"] : ["#18181b", "#3f3f46", "#71717a", "#a1a1aa"];
     const ps = Array.from({ length: 120 }, () => {
-      const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.2, s = (6 + Math.random() * 8) * devicePixelRatio;
-      return { x: c.width / 2, y: c.height, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, w: (4 + Math.random() * 4) * devicePixelRatio, h: (6 + Math.random() * 6) * devicePixelRatio, col: cols[Math.floor(Math.random() * cols.length)], life: 1 };
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 1.2, s = (6 + Math.random() * 8) * dpr;
+      return { x: c.width / 2, y: c.height, vx: Math.cos(a) * s, vy: Math.sin(a) * s, r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, w: (4 + Math.random() * 4) * dpr, h: (6 + Math.random() * 6) * dpr, col: cols[Math.floor(Math.random() * cols.length)], life: 1 };
     });
     // raf 存在 ref 里：连点时先取消上一轮循环，否则两轮循环会同时画同一块画布
     cancelAnimationFrame(rafRef.current);
@@ -321,7 +322,7 @@ function ConfettiDemo() {
       ctx.clearRect(0, 0, c.width, c.height);
       let alive = false;
       ps.forEach((p) => {
-        p.vy += 0.25 * devicePixelRatio;
+        p.vy += 0.25 * dpr;
         p.vx *= 0.99;
         p.x += p.vx;
         p.y += p.vy;
@@ -388,7 +389,22 @@ function SwipeDemo() {
           </div>
         </li>
       ))}
-      {items.length === 0 && <li className="py-8 text-center text-sm text-zinc-400">全部完成 🎉</li>}
+      {items.length === 0 && (
+        <li className="flex flex-col items-center gap-3 py-8">
+          <span className="text-sm text-zinc-400">全部完成 🎉</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setItems(["回复设计评审邮件", "更新组件文档", "整理 Figma 文件"]);
+              setDx({});
+              start.current = null;
+            }}
+          >
+            恢复列表
+          </Button>
+        </li>
+      )}
     </ul>
   );
 }

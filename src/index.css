@@ -70,7 +70,7 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  /* 锚点滚动由 App 内的自定义快速滚动接管（固定时长 + 逐帧重定位），这里不再启用 smooth */
   scroll-padding-top: 80px;
   color-scheme: light;
 }
