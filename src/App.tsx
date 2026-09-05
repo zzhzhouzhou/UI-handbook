@@ -234,7 +234,7 @@ export default function App() {
                 直接看高级交互
               </a>
             </div>
-            <div className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-zinc-200 bg-zinc-200 md:grid-cols-3 dark:border-zinc-800 dark:bg-zinc-800">
+            <div className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-zinc-200 bg-zinc-200 sm:grid-cols-3 md:grid-cols-5 dark:border-zinc-800 dark:bg-zinc-800">
               {NAV.map((g) => (
                 <a key={g.id} href={`#${g.id}`} className="group bg-white p-4 transition-colors hover:bg-zinc-50 dark:bg-zinc-950 dark:hover:bg-zinc-900">
                   <div className="flex items-center justify-between">
