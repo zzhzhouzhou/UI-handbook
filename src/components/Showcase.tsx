@@ -151,7 +151,7 @@ export function Showcase({
   };
 
   return (
-    <article ref={rootRef} id={id} className="scroll-mt-24 border-t border-zinc-200 py-14 first:border-t-0 dark:border-zinc-800">
+    <article ref={rootRef} id={id} className="scroll-mt-24 border-t border-zinc-200 py-14 first:border-t-0 [content-visibility:auto] [contain-intrinsic-size:auto_900px] dark:border-zinc-800">
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">

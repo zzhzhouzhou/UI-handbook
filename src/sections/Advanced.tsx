@@ -357,12 +357,20 @@ function SwipeDemo() {
   const [dx, setDx] = useState<Record<string, number>>({});
   const start = useRef<{ x: number; id: string } | null>(null);
   const onDown = (e: RPointerEvent, id: string) => {
+    // preventDefault：让这次手势不再合成 click，拖拽松手时不会误触露出来的删除按钮
+    e.preventDefault();
     start.current = { x: e.clientX, id };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      // 指针已释放等场景 setPointerCapture 会抛 NotFoundError
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // 捕获失败时退化为普通监听，不影响拖拽
+    }
   };
   const onMove = (e: RPointerEvent, id: string) => {
     if (!start.current || start.current.id !== id) return;
-    setDx((d) => ({ ...d, [id]: Math.min(0, Math.max(-96, e.clientX - start.current!.x)) }));
+    // 钳制到 -80（= 按钮宽度）：滑得再远也不会露出按钮右侧的深色空隙
+    setDx((d) => ({ ...d, [id]: Math.min(0, Math.max(-80, e.clientX - start.current!.x)) }));
   };
   const onUp = (id: string) => {
     setDx((d) => ({ ...d, [id]: (d[id] ?? 0) < -48 ? -80 : 0 }));
@@ -702,8 +710,8 @@ onPointerUp={() => {
         <ConfettiDemo />
       </Showcase>
 
-      <Showcase id="swipe" title="左滑删除" en="Swipe to Delete" level="高级" description="iOS 列表的经典手势：左滑露出红色删除按钮，滑过阈值自动吸附打开，否则弹回。使用 Pointer Events 同时支持鼠标与触摸。" usage={["移动端列表：邮件、待办、通知。"]} points={["onPointerDown setPointerCapture 保证移出元素仍能收到事件。", "位移限制在 [−96, 0]；松手时 < −48 吸附到 −80，否则回 0。", "拖动中不加 transition，松手后加 200ms 过渡。", "touch-pan-y 让垂直滚动仍然可用。"]} code={`onPointerDown={e => { start.current = e.clientX; e.target.setPointerCapture(e.pointerId); }}
-onPointerMove={e => start.current !== null && setDx(Math.min(0, Math.max(-96, e.clientX - start.current)))}
+      <Showcase id="swipe" title="左滑删除" en="Swipe to Delete" level="高级" description="iOS 列表的经典手势：左滑露出红色删除按钮，滑过阈值自动吸附打开，否则弹回。使用 Pointer Events 同时支持鼠标与触摸。" usage={["移动端列表：邮件、待办、通知。"]} points={["onPointerDown setPointerCapture 保证移出元素仍能收到事件。", "位移钳制在 [−80, 0]（−80 正好等于按钮宽度，滑过头会露出深色空隙）；松手时 < −48 吸附到 −80，否则回 0。", "拖动中不加 transition，松手后加 200ms 过渡。", "touch-pan-y 让垂直滚动仍然可用。"]} code={`onPointerDown={e => { e.preventDefault(); start.current = e.clientX; e.currentTarget.setPointerCapture(e.pointerId); }}
+onPointerMove={e => start.current !== null && setDx(Math.min(0, Math.max(-80, e.clientX - start.current)))}
 onPointerUp={() => { setDx(d => d < -48 ? -80 : 0); start.current = null; }}
 style={{ transform: \`translateX(\${dx}px)\` }}`}>
         <SwipeDemo />

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NAV, type NavGroup } from "./nav";
-import { Icon, Kbd } from "./components/primitives";
+import { Button, Icon, Kbd } from "./components/primitives";
 import { cn } from "./utils/cn";
 import Foundations from "./sections/Foundations";
 import General from "./sections/General";
@@ -157,6 +157,28 @@ function Sidebar({ q, onSearch, groups, active, onNavigate, autoFocusSearch = fa
 
 const total = NAV.reduce((a, g) => a + g.items.length, 0);
 
+/** 全局错误边界：任何章节渲染崩溃时显示恢复卡片，而不是整页变黑 */
+class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="mx-auto my-24 max-w-md rounded-xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="text-lg font-semibold">页面出了点问题</div>
+          <p className="mt-2 text-sm leading-6 text-zinc-500">渲染过程中发生了一个错误，点击重试即可恢复，其余章节不受影响。</p>
+          <Button className="mt-5" onClick={() => this.setState({ error: null })}>
+            重试
+          </Button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   const { dark, toggle } = useTheme();
   const [q, setQ] = useState("");
@@ -298,16 +320,18 @@ export default function App() {
             </div>
           </div>
 
-          <Foundations />
-          <General />
-          <Forms />
-          <Navigation />
-          <Feedback />
-          <DataDisplay />
-          <Motion />
-          <Advanced />
-          <Standards />
-          <Patterns />
+          <ErrorBoundary>
+            <Foundations />
+            <General />
+            <Forms />
+            <Navigation />
+            <Feedback />
+            <DataDisplay />
+            <Motion />
+            <Advanced />
+            <Standards />
+            <Patterns />
+          </ErrorBoundary>
 
           {/* 使用指南 */}
           <div className="mt-24 border-t border-zinc-200 pt-12 dark:border-zinc-800">
