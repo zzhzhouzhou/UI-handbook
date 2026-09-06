@@ -1,4 +1,5 @@
-# 形色场 UI Handbook
+# 形色场
+# UI Handbook
 
 **在线阅读**
 
@@ -72,9 +73,7 @@ src/
 
 如果你也想部署自己的副本：构建产物是单个 `dist/index.html`，Cloudflare Pages / Vercel / Netlify 等任何静态托管都能直接用（构建命令 `npm run build`，输出目录 `dist`）。
 
-## 仅供学习参考
-
-欢迎 Fork 用于自己的学习与项目；如果对你有帮助，欢迎点个 Star。
+欢迎 Fork ；如果对你有帮助，欢迎点个 Star，感谢你！
 
 ## 作者
 
