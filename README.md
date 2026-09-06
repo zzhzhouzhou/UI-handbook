@@ -1,6 +1,10 @@
 # 形色场 UI Handbook
 
-**在线阅读：<https://uihandbook.zzhzhou2026.workers.dev>**
+**在线阅读**
+
+- Cloudflare：<https://uihandbook.zzhzhou2026.workers.dev>
+- GitHub Pages：<https://zzhzhouzhou.github.io/UI-handbook/>
+- 离线文档（Markdown，适合无法访问网页时阅读）：[docs/handbook.md](docs/handbook.md)
 
 一份从设计令牌到高级交互的完整 UI 组件教程。每个组件都包含**可交互预览**、**用途说明**、**实现要点**、**无障碍细节**与**可直接复制的核心代码**，全部采用克制的黑白灰实现——把 `zinc-900` 换成你的品牌色，就是你的设计系统。
 
