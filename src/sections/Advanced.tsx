@@ -353,36 +353,49 @@ function ConfettiDemo() {
 
 /* Swipe to delete */
 function SwipeDemo() {
-  const [items, setItems] = useState(["回复设计评审邮件", "更新组件文档", "整理 Figma 文件"]);
+  const INITIAL_ITEMS = ["回复设计评审邮件", "更新组件文档", "整理 Figma 文件"];
+  const [items, setItems] = useState(INITIAL_ITEMS);
   const [dx, setDx] = useState<Record<string, number>>({});
   const start = useRef<{ x: number; id: string } | null>(null);
+  // 实时位移存 ref：pointerup 的闭包可能落后于最后一次 move 的 setState
+  const dxLive = useRef(0);
+  const THRESHOLD = 64;
   const onDown = (e: RPointerEvent, id: string) => {
-    // preventDefault：让这次手势不再合成 click，拖拽松手时不会误触露出来的删除按钮
+    // preventDefault：让这次手势不再合成 click，拖拽松手时不会误触别的元素
     e.preventDefault();
+    dxLive.current = 0;
     start.current = { x: e.clientX, id };
     try {
-      // 指针已释放等场景 setPointerCapture 会抛 NotFoundError
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     } catch {
-      // 捕获失败时退化为普通监听，不影响拖拽
+      /* 捕获失败时退化为普通监听，不影响拖拽 */
     }
   };
   const onMove = (e: RPointerEvent, id: string) => {
     if (!start.current || start.current.id !== id) return;
     // 钳制到 -80（= 按钮宽度）：滑得再远也不会露出按钮右侧的深色空隙
-    setDx((d) => ({ ...d, [id]: Math.min(0, Math.max(-80, e.clientX - start.current!.x)) }));
+    const next = Math.min(0, Math.max(-80, e.clientX - start.current!.x));
+    dxLive.current = next;
+    setDx((d) => ({ ...d, [id]: next }));
   };
   const onUp = (id: string) => {
-    setDx((d) => ({ ...d, [id]: (d[id] ?? 0) < -48 ? -80 : 0 }));
+    // 必须有配对的 pointerdown 才处理：指针落在滑出的红色条上时不会触发 onDown，
+    // 若不清空 dxLive，残留的 -80 会让下一次松手误删别的行——连环删光的根源
+    if (!start.current || start.current.id !== id) return;
+    const offset = dxLive.current;
+    dxLive.current = 0;
     start.current = null;
+    // 滑过阈值直接删除，否则弹回 0——不做「常开的删除按钮」，避免拖拽结束的 click 误触
+    setDx((d) => ({ ...d, [id]: 0 }));
+    if (offset <= -THRESHOLD) setItems((l) => l.filter((x) => x !== id));
   };
   return (
     <ul className="w-full max-w-sm overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       {items.map((it) => (
         <li key={it} className="relative overflow-hidden border-b border-zinc-100 last:border-0 dark:border-zinc-800">
-          <button onClick={() => setItems(items.filter((x) => x !== it))} className="absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-red-600 text-white" aria-label="删除">
+          <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 flex w-20 items-center justify-center bg-red-600 text-white">
             <Icon.Trash />
-          </button>
+          </span>
           <div
             onPointerDown={(e) => onDown(e, it)}
             onPointerMove={(e) => onMove(e, it)}
@@ -393,7 +406,7 @@ function SwipeDemo() {
           >
             <span className="h-4 w-4 rounded border border-zinc-300 dark:border-zinc-600" />
             {it}
-            <span className="ml-auto text-xs text-zinc-400">← 左滑</span>
+            <span className="ml-auto text-xs text-zinc-400">← 左滑到底删除</span>
           </div>
         </li>
       ))}
@@ -404,7 +417,7 @@ function SwipeDemo() {
             variant="outline"
             size="sm"
             onClick={() => {
-              setItems(["回复设计评审邮件", "更新组件文档", "整理 Figma 文件"]);
+              setItems(INITIAL_ITEMS);
               setDx({});
               start.current = null;
             }}
@@ -710,9 +723,22 @@ onPointerUp={() => {
         <ConfettiDemo />
       </Showcase>
 
-      <Showcase id="swipe" title="左滑删除" en="Swipe to Delete" level="高级" description="iOS 列表的经典手势：左滑露出红色删除按钮，滑过阈值自动吸附打开，否则弹回。使用 Pointer Events 同时支持鼠标与触摸。" usage={["移动端列表：邮件、待办、通知。"]} points={["onPointerDown setPointerCapture 保证移出元素仍能收到事件。", "位移钳制在 [−80, 0]（−80 正好等于按钮宽度，滑过头会露出深色空隙）；松手时 < −48 吸附到 −80，否则回 0。", "拖动中不加 transition，松手后加 200ms 过渡。", "touch-pan-y 让垂直滚动仍然可用。"]} code={`onPointerDown={e => { e.preventDefault(); start.current = e.clientX; e.currentTarget.setPointerCapture(e.pointerId); }}
+            <Showcase
+        id="swipe"
+        title="左滑删除"
+        en="Swipe to Delete"
+        level="高级"
+        description="iOS 列表的经典手势：左滑露出红色删除区，滑过阈值松手直接删除，未过阈值弹回。使用 Pointer Events 同时支持鼠标与触摸。"
+        usage={["移动端列表：邮件、待办、通知。"]}
+        points={["onPointerDown setPointerCapture 保证移出元素仍能收到事件；pointerdown 里 preventDefault 让手势不合成 click。", "位移钳制在 [−80, 0]（−80 正好等于按钮宽度，滑过头会露出深色空隙）。", "松手判定在 onPointerUp：位移 ≤ −64px 直接从数据里删除该项，否则弹回 0。", "不要做「常开的删除按钮」：拖拽结束合成的 click 会落在露出的按钮上，是连环误删的根源；删除按钮在拖动过程中仅作视觉提示。", "touch-pan-y 让垂直滚动仍然可用；拖动中不加 transition，松手后加 200ms 过渡。"]}
+        a11y={["删除是不可逆操作：提供恢复入口（本例为「恢复列表」按钮），或做撤销 Toast。"]}
+        code={`onPointerDown={e => { e.preventDefault(); start.current = e.clientX; e.currentTarget.setPointerCapture(e.pointerId); }}
 onPointerMove={e => start.current !== null && setDx(Math.min(0, Math.max(-80, e.clientX - start.current)))}
-onPointerUp={() => { setDx(d => d < -48 ? -80 : 0); start.current = null; }}
+onPointerUp={() => {
+  // 滑过阈值直接删除，否则弹回
+  if (dxLive.current <= -64) removeItem(id);
+  else setDx(0);
+}}
 style={{ transform: \`translateX(\${dx}px)\` }}`}>
         <SwipeDemo />
       </Showcase>

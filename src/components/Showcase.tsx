@@ -89,12 +89,13 @@ export function Showcase({
     const el = rootRef.current;
     if (!el || mounted) return;
     let io: IntersectionObserver | null = null;
-    let ioFired = false;
+    let done = false;
     let raf = 0;
-    let fallbackTimer = 0;
     const check = () => {
+      if (done) return;
       const r = el.getBoundingClientRect();
       if (r.top < window.innerHeight + 200 && r.bottom > -200) {
+        done = true;
         setMounted(true);
         cleanup();
       }
@@ -111,16 +112,16 @@ export function Showcase({
       io = null;
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
-      window.clearTimeout(fallbackTimer);
       if (raf) {
         cancelAnimationFrame(raf);
         raf = 0;
       }
     };
+    // 三条挂载路径并行：IO（正常浏览器）、初始位置检查、常驻 scroll 监听（IO 失效的环境）
     io = new IntersectionObserver(
       (entries) => {
-        ioFired = true;
         if (entries.some((e) => e.isIntersecting)) {
+          done = true;
           setMounted(true);
           cleanup();
         }
@@ -128,13 +129,9 @@ export function Showcase({
       { rootMargin: "200px 0px" },
     );
     io.observe(el);
-    // 少数内嵌 / 无头环境的 IntersectionObserver 不可靠：800ms 内一次回调都没有就退回 scroll + rect 检测
-    fallbackTimer = window.setTimeout(() => {
-      if (ioFired) return;
-      window.addEventListener("scroll", onScroll, { passive: true });
-      window.addEventListener("resize", onScroll);
-      check();
-    }, 800);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    check();
     return cleanup;
   }, [mounted]);
 

@@ -173,11 +173,12 @@ function TooltipDemo() {
   );
 }
 
+const MAX_TAG_LEN = 12;
 function TagInputDemo() {
   const [tags, setTags] = useState(["React", "Tailwind"]);
   const [v, setV] = useState("");
   const add = () => {
-    const t = v.trim();
+    const t = v.trim().slice(0, MAX_TAG_LEN);
     if (t && !tags.includes(t) && tags.length < 6) setTags([...tags, t]);
     setV("");
   };
@@ -202,12 +203,14 @@ function TagInputDemo() {
             }
             if (e.key === "Backspace" && !v && tags.length) setTags(tags.slice(0, -1));
           }}
+          maxLength={MAX_TAG_LEN}
           onBlur={add}
           placeholder={tags.length ? "" : "输入后回车添加"}
           className="h-6 min-w-24 flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-400"
         />
+        {v.length > 0 && <span className="shrink-0 self-center font-mono text-[10px] tabular-nums text-zinc-300 dark:text-zinc-600">{v.length}/{MAX_TAG_LEN}</span>}
       </div>
-      <p className="mt-2 text-xs text-zinc-400">回车添加 · Backspace 删除最后一个 · 去重且最多 6 个</p>
+      <p className="mt-2 text-xs text-zinc-400">回车添加 · 单个标签最多 12 字 · Backspace 删除最后一个 · 最多 6 个</p>
     </div>
   );
 }
