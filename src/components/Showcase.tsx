@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cn } from "../utils/cn";
-import { copyText } from "../utils/copy";
 import { highlight, type HlClass } from "../utils/highlight";
+import { useCopy } from "../hooks/useCopy";
 
 /** 代码高亮配色：在 zinc 灰阶底上用低饱和色区分语法，注释保持中性 */
 const HL_CLS: Record<HlClass, string> = {
@@ -14,9 +14,11 @@ const HL_CLS: Record<HlClass, string> = {
 };
 
 export function Highlighted({ code }: { code: string }) {
+  // 分词结果只与 code 有关:预览/代码 Tab 来回切换、复制反馈等状态变化都不会重跑正则
+  const tokens = useMemo(() => highlight(code), [code]);
   return (
     <>
-      {highlight(code).map((tok, i) =>
+      {tokens.map((tok, i) =>
         tok.c ? (
           <span key={i} className={HL_CLS[tok.c]}>
             {tok.t}
@@ -77,13 +79,12 @@ export function Showcase({
   dotted = true,
 }: ShowcaseProps) {
   const [tab, setTab] = useState<"preview" | "code">("preview");
-  const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
   const [key, setKey] = useState(0);
   // 懒挂载：全站几十个 demo 同时挂载时，定时器/RAF/CSS 动画都在跑；
   // 首次滚近视口（提前 200px）才渲染预览内容，离屏的 demo 不产生任何运行时开销
   const [mounted, setMounted] = useState(false);
   const rootRef = useRef<HTMLElement>(null);
-  const copyTimer = useRef<number | undefined>(undefined);
+  const { state: copyState, copy: doCopy } = useCopy();
 
   useEffect(() => {
     const el = rootRef.current;
@@ -135,16 +136,8 @@ export function Showcase({
     return cleanup;
   }, [mounted]);
 
-  useEffect(() => () => window.clearTimeout(copyTimer.current), []);
-
-  const copy = async () => {
-    if (!code) return;
-    const ok = await copyText(code);
-    setCopyState(ok ? "ok" : "fail");
-    if (ok) {
-      window.clearTimeout(copyTimer.current);
-      copyTimer.current = window.setTimeout(() => setCopyState("idle"), 1400);
-    }
+  const copy = () => {
+    if (code) doCopy(code);
   };
 
   return (

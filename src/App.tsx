@@ -1,17 +1,19 @@
-import { Component, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NAV, type NavGroup } from "./nav";
 import { Button, Icon, Kbd } from "./components/primitives";
 import { cn } from "./utils/cn";
-import Foundations from "./sections/Foundations";
-import General from "./sections/General";
-import Forms from "./sections/Forms";
-import Navigation from "./sections/Navigation";
-import Feedback from "./sections/Feedback";
-import DataDisplay from "./sections/DataDisplay";
-import Motion from "./sections/Motion";
-import Advanced from "./sections/Advanced";
-import Patterns from "./sections/Patterns";
-import Standards from "./sections/Standards";
+
+// 懒加载各章节：减少首屏 JS 体积，组件按需下载（Showcase 本身已有懒挂载机制配合）
+const Foundations = lazy(() => import("./sections/Foundations"));
+const General = lazy(() => import("./sections/General"));
+const Forms = lazy(() => import("./sections/Forms"));
+const Navigation = lazy(() => import("./sections/Navigation"));
+const Feedback = lazy(() => import("./sections/Feedback"));
+const DataDisplay = lazy(() => import("./sections/DataDisplay"));
+const Motion = lazy(() => import("./sections/Motion"));
+const Advanced = lazy(() => import("./sections/Advanced"));
+const Standards = lazy(() => import("./sections/Standards"));
+const Patterns = lazy(() => import("./sections/Patterns"));
 
 function useTheme() {
   // index.html 的内联脚本已在首帧前把 .dark 挂到 <html> 上，这里直接以其初始值同步状态
@@ -243,6 +245,29 @@ export default function App() {
 
   const sidebar = <Sidebar q={q} onSearch={setQ} groups={filtered} active={active} onNavigate={() => setMenu(false)} />;
 
+  // 各章节不依赖任何应用状态(主题走 <html> 的 class,CSS 变体响应)。
+  // 用 useMemo 固定元素树:侧边栏搜索每敲一个字、滚动高亮每次变化都只重渲染外壳,
+  // 不会连带重渲染 104 个 demo 组件。
+  const sections = useMemo(
+    () => (
+      <ErrorBoundary>
+        <Suspense>
+          <Foundations />
+          <General />
+          <Forms />
+          <Navigation />
+          <Feedback />
+          <DataDisplay />
+          <Motion />
+          <Advanced />
+          <Standards />
+          <Patterns />
+        </Suspense>
+      </ErrorBoundary>
+    ),
+    [],
+  );
+
   return (
     <div className="min-h-screen">
       {/* Top bar */}
@@ -320,18 +345,7 @@ export default function App() {
             </div>
           </div>
 
-          <ErrorBoundary>
-            <Foundations />
-            <General />
-            <Forms />
-            <Navigation />
-            <Feedback />
-            <DataDisplay />
-            <Motion />
-            <Advanced />
-            <Standards />
-            <Patterns />
-          </ErrorBoundary>
+          {sections}
 
           {/* 使用指南 */}
           <div className="mt-24 border-t border-zinc-200 pt-12 dark:border-zinc-800">

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Showcase, SectionHeader, Highlighted } from "../components/Showcase";
 import { Button, Icon, Avatar, Kbd } from "../components/primitives";
 import { cn } from "../utils/cn";
-import { copyText } from "../utils/copy";
+import { useCopy } from "../hooks/useCopy";
 
 function CardDemo() {
   return (
@@ -262,16 +262,8 @@ function StatsDemo() {
 }
 
 function CodeBlockDemo() {
-  const [copied, setCopied] = useState(false);
-  const timer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(timer.current), []);
   const code = `export function cn(...inputs) {\n  return twMerge(clsx(inputs));\n}`;
-  const copy = async () => {
-    // clipboard API 在非安全上下文（file:// 等）不可用，copyText 内部会降级到 execCommand
-    setCopied(await copyText(code));
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setCopied(false), 1200);
-  };
+  const { state: copied, copy } = useCopy();
   return (
     <div className="w-full max-w-md space-y-6">
       <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-100">
@@ -284,8 +276,8 @@ function CodeBlockDemo() {
             </span>
             <span className="ml-2 font-mono text-xs text-zinc-500">utils/cn.ts</span>
           </div>
-          <button onClick={copy} className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white">
-            {copied ? <Icon.Check size={12} /> : <Icon.Copy size={12} />} {copied ? "已复制" : "复制"}
+          <button onClick={() => copy(code)} className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white">
+            {copied === "ok" ? <Icon.Check size={12} /> : <Icon.Copy size={12} />} {copied === "ok" ? "已复制" : "复制"}
           </button>
         </div>
         <pre className="overflow-x-auto p-4 text-[12.5px] leading-6">
