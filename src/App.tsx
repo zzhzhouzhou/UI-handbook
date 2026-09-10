@@ -4,6 +4,7 @@ import { Button, Icon, Kbd } from "./components/primitives";
 import { CommandPalette } from "./components/CommandPalette";
 import { cn } from "./utils/cn";
 import { smoothScrollTo } from "./utils/scroll";
+import { useScrollSpy } from "./hooks/useScrollSpy";
 
 // 懒加载各章节：减少首屏 JS 体积，组件按需下载（Showcase 本身已有懒挂载机制配合）
 const Foundations = lazy(() => import("./sections/Foundations"));
@@ -37,23 +38,6 @@ function useTheme() {
   return { dark, toggle };
 }
 
-function useActiveId(ids: string[]) {
-  const [active, setActive] = useState(ids[0]);
-  useEffect(() => {
-    const els = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-20% 0px -70% 0px", threshold: 0 },
-    );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
-  }, [ids]);
-  return active;
-}
-
 /** 聚焦当前可见的侧边栏搜索框（桌面栏与移动抽屉各有一个实例） */
 function focusNavSearch(): boolean {
   const inputs = Array.from(document.querySelectorAll<HTMLInputElement>("input[data-nav-search]"));
@@ -65,9 +49,46 @@ function focusNavSearch(): boolean {
   return target.getClientRects().length > 0;
 }
 
-function Sidebar({ groups, active, onNavigate, autoFocusSearch = false }: { groups: NavGroup[]; active: string; onNavigate: () => void; autoFocusSearch?: boolean }) {
+/** 顶部细阅读进度条：跟随页面滚动，懒挂载改变总高度后自动校正 */
+function ReadingProgress() {
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const compute = () => {
+      raf = 0;
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - doc.clientHeight;
+      setP(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+    };
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(compute);
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    compute();
+    const t = window.setTimeout(schedule, 500);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, []);
+  return (
+    <div aria-hidden="true" className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-0.5">
+      <div className="h-full origin-left bg-zinc-900 transition-transform duration-150 ease-out dark:bg-white" style={{ transform: `scaleX(${p})` }} />
+    </div>
+  );
+}
+
+function Sidebar({ groups, active, activeGroupId, onNavigate, autoFocusSearch = false }: { groups: NavGroup[]; active: string; activeGroupId: string; onNavigate: () => void; autoFocusSearch?: boolean }) {
   const [q, setQ] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+  // 用户在手动浏览列表（悬停 / 滚轮 / 触摸）时暂停"跟随滚动"，鼠标移开稍候再恢复，避免和用户抢滚动
+  const [userBrowsing, setUserBrowsing] = useState(false);
+  const leaveTimer = useRef<number | undefined>(undefined);
+  const activeGroup = groups.find((g) => g.id === activeGroupId);
 
   // 本地过滤：搜索状态不泄漏到 App 层，App 不重渲染 → 滚动位置稳定
   const filtered = useMemo(() => {
@@ -75,17 +96,36 @@ function Sidebar({ groups, active, onNavigate, autoFocusSearch = false }: { grou
     const s = q.trim().toLowerCase();
     return groups.map((g) => ({ ...g, items: g.items.filter((i) => i.label.toLowerCase().includes(s) || i.en.toLowerCase().includes(s) || g.title.includes(s)) })).filter((g) => g.items.length);
   }, [q, groups]);
-  // 当前浏览的章节实时滚动到侧边栏列表中部
+
+  useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
+
+  // 当前浏览的内容实时滚动到侧边栏列表中部；用户在手动浏览列表时暂停
   useEffect(() => {
     const container = listRef.current;
-    if (!container) return;
+    if (!container || userBrowsing) return;
     const el = container.querySelector<HTMLAnchorElement>(`a[href="#${active}"]`);
     if (!el) return;
+    const cTop = container.scrollTop;
+    const cH = container.clientHeight;
+    const eTop = el.offsetTop;
+    const eH = el.clientHeight;
+    // 目标已经完整可见就不再滚动：避免快速滚动页面时侧边栏来回抖动
+    if (eTop >= cTop && eTop + eH <= cTop + cH) return;
     container.scrollTo({
-      top: Math.max(0, el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2),
+      top: Math.max(0, eTop - cH / 2 + eH / 2),
       behavior: "smooth",
     });
-  }, [active]);
+  }, [active, userBrowsing]);
+
+  const pauseFollow = () => {
+    window.clearTimeout(leaveTimer.current);
+    setUserBrowsing(true);
+  };
+  const resumeFollow = () => {
+    window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(() => setUserBrowsing(false), 500);
+  };
+
   return (
     <nav className="flex h-full flex-col">
       <div className="px-4 pb-3">
@@ -105,10 +145,32 @@ function Sidebar({ groups, active, onNavigate, autoFocusSearch = false }: { grou
           </span>
         </div>
       </div>
-      <div ref={listRef} className="relative flex-1 overflow-y-auto px-4 pb-8">
+      {/* 当前位置指示：不搜索时显示当前章节，随滚动实时更新 */}
+      {!q.trim() && activeGroup && (
+        <div className="flex items-center gap-2 border-b border-zinc-100 px-4 pb-3 dark:border-zinc-900">
+          <span className="rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">{activeGroup.index}</span>
+          <span className="min-w-0 flex-1 truncate text-xs text-zinc-500 dark:text-zinc-400">当前位置 · {activeGroup.title}</span>
+        </div>
+      )}
+      <div
+        ref={listRef}
+        onMouseEnter={pauseFollow}
+        onMouseLeave={resumeFollow}
+        onWheel={pauseFollow}
+        onTouchStart={pauseFollow}
+        className="relative flex-1 overflow-y-auto px-4 pb-8"
+      >
         {filtered.map((g) => (
           <div key={g.id} className="mb-5">
-            <a href={`#${g.id}`} onClick={onNavigate} className="mb-1.5 flex items-baseline gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
+            <a
+              href={`#${g.id}`}
+              onClick={onNavigate}
+              aria-current={g.id === activeGroupId ? "location" : undefined}
+              className={cn(
+                "mb-1.5 flex items-baseline gap-2 text-[11px] font-semibold uppercase tracking-wider",
+                g.id === activeGroupId ? "text-zinc-900 dark:text-white" : "text-zinc-400 hover:text-zinc-900 dark:hover:text-white",
+              )}
+            >
               <span className="font-mono">{g.index}</span> {g.title}
             </a>
             <ul className="space-y-px">
@@ -117,6 +179,7 @@ function Sidebar({ groups, active, onNavigate, autoFocusSearch = false }: { grou
                   <a
                     href={`#${it.id}`}
                     onClick={onNavigate}
+                    aria-current={active === it.id ? "location" : undefined}
                     className={cn(
                       "flex items-center justify-between rounded-md px-2 py-1 text-[13px] transition-colors",
                       active === it.id ? "bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-white" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white",
@@ -140,6 +203,9 @@ function Sidebar({ groups, active, onNavigate, autoFocusSearch = false }: { grou
           </span>
           <span className="flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-zinc-900 dark:bg-white" /> 高级
+          </span>
+          <span className="ml-auto flex items-center gap-1">
+            <Kbd>⌘K</Kbd> 命令面板
           </span>
         </div>
       </div>
@@ -175,8 +241,17 @@ export default function App() {
   const { dark, toggle } = useTheme();
   const [menu, setMenu] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
-  const ids = useMemo(() => NAV.flatMap((g) => g.items.map((i) => i.id)), []);
-  const active = useActiveId(ids);
+  // 侦测目标按文档顺序：章节标题 + 组件条目，章节标题也参与高亮/跟随
+  const spyIds = useMemo(() => NAV.flatMap((g) => [g.id, ...g.items.map((i) => i.id)]), []);
+  const spyTarget = useScrollSpy(spyIds);
+
+  // spyTarget 可能是章节 id 或组件 id，统一成"当前项 + 当前章"
+  const { active, activeGroupId } = useMemo(() => {
+    const group = NAV.find((g) => g.id === spyTarget);
+    if (group) return { active: group.items[0]?.id ?? group.id, activeGroupId: group.id };
+    const g = NAV.find((x) => x.items.some((i) => i.id === spyTarget));
+    return { active: spyTarget, activeGroupId: g?.id ?? NAV[0].id };
+  }, [spyTarget]);
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -246,7 +321,7 @@ export default function App() {
     };
   }, [menu]);
 
-  const sidebar = <Sidebar groups={NAV} active={active} onNavigate={() => setMenu(false)} />;
+  const sidebar = <Sidebar groups={NAV} active={active} activeGroupId={activeGroupId} onNavigate={() => setMenu(false)} />;
 
   // 各章节不依赖任何应用状态(主题走 <html> 的 class,CSS 变体响应)。
   // 用 useMemo 固定元素树:侧边栏搜索每敲一个字、滚动高亮每次变化都只重渲染外壳,
@@ -273,6 +348,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      {/* 顶部阅读进度条 */}
+      <ReadingProgress />
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
         <div className="flex h-14 items-center justify-between px-4 md:px-6">
@@ -308,7 +385,7 @@ export default function App() {
           <div className="fixed inset-0 top-14 z-30 lg:hidden">
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMenu(false)} />
             <aside className="absolute inset-y-0 left-0 w-72 animate-slide-in-left bg-white pt-4 shadow-2xl dark:bg-zinc-950">
-              <Sidebar groups={NAV} active={active} onNavigate={() => setMenu(false)} autoFocusSearch />
+              <Sidebar groups={NAV} active={active} activeGroupId={activeGroupId} onNavigate={() => setMenu(false)} autoFocusSearch />
             </aside>
           </div>
         )}
