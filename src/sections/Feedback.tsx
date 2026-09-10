@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Showcase, SectionHeader } from "../components/Showcase";
 import { Button, Icon, inputCls, Label } from "../components/primitives";
 import { cn } from "../utils/cn";
@@ -34,22 +35,27 @@ function ToastDemo() {
       <Button variant="outline" size="sm" onClick={() => push({ title: "网络错误", desc: "请检查连接后重试", type: "error" })}>
         错误
       </Button>
-      <div className="pointer-events-none absolute bottom-0 right-0 flex w-80 max-w-[calc(100%-1rem)] flex-col gap-2">
-        {toasts.map((t) => (
-          <div key={t.id} role="status" className={cn("pointer-events-auto flex items-start gap-3 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg transition-all duration-300 dark:border-zinc-700 dark:bg-zinc-900", t.leaving ? "translate-x-4 opacity-0" : "animate-fade-up")}>
-            {t.type === "success" && <Icon.Check className="mt-0.5 text-emerald-600" />}
-            {t.type === "error" && <Icon.Alert className="mt-0.5 text-red-600" />}
-            {t.type === "default" && <Icon.Info className="mt-0.5 text-zinc-500" />}
-            <div className="flex-1 text-sm">
-              <div className="font-medium">{t.title}</div>
-              {t.desc && <div className="text-zinc-500">{t.desc}</div>}
-            </div>
-            <button onClick={() => close(t.id)} className="rounded p-0.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white" aria-label="关闭">
-              <Icon.X size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
+      {/* Toast 固定到视口右下角：portal 到 body，避免被预览容器裁切 */}
+      {toasts.length > 0 &&
+        createPortal(
+          <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2">
+            {toasts.map((t) => (
+              <div key={t.id} role="status" className={cn("pointer-events-auto flex items-start gap-3 rounded-lg border border-zinc-200 bg-white p-3 shadow-lg transition-all duration-300 dark:border-zinc-700 dark:bg-zinc-900", t.leaving ? "translate-x-4 opacity-0" : "animate-fade-up")}>
+                {t.type === "success" && <Icon.Check className="mt-0.5 text-emerald-600" />}
+                {t.type === "error" && <Icon.Alert className="mt-0.5 text-red-600" />}
+                {t.type === "default" && <Icon.Info className="mt-0.5 text-zinc-500" />}
+                <div className="flex-1 text-sm">
+                  <div className="font-medium">{t.title}</div>
+                  {t.desc && <div className="text-zinc-500">{t.desc}</div>}
+                </div>
+                <button onClick={() => close(t.id)} className="rounded p-0.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white" aria-label="关闭">
+                  <Icon.X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -114,8 +120,9 @@ function ModalDemo() {
       <Button variant="danger" onClick={() => setConfirm(true)}>
         删除项目
       </Button>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]" onClick={() => setOpen(false)}>
+      {open &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]" onClick={() => setOpen(false)}>
           <div ref={panelRef} role="dialog" aria-modal aria-labelledby="dlg-title" onClick={(e) => e.stopPropagation()} className="w-full max-w-md animate-scale-in rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
             <div className="flex items-start justify-between">
               <div>
@@ -145,10 +152,12 @@ function ModalDemo() {
               <Button onClick={() => setOpen(false)}>保存</Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
-      {confirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setConfirm(false)}>
+      {confirm &&
+        createPortal(
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setConfirm(false)}>
           <div ref={confirmRef} role="alertdialog" aria-modal aria-labelledby="dlg-confirm-title" onClick={(e) => e.stopPropagation()} className="w-full max-w-sm animate-scale-in rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
             <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-red-50 text-red-600 dark:bg-red-950/50">
               <Icon.Trash size={20} />
@@ -164,7 +173,8 @@ function ModalDemo() {
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -213,39 +223,41 @@ function DrawerDemo() {
       <Button variant="outline" onClick={() => setSide("bottom")}>
         底部面板
       </Button>
-      {side && (
-        <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setSide(null)}>
-          <div
-            onClick={(e) => e.stopPropagation()}
-            onAnimationEnd={() => setEntered(true)}
-            style={side === "bottom" && entered ? { transform: `translateY(${dy}px)`, transition: drag.current ? "none" : "transform 0.25s cubic-bezier(0.32,0.72,0,1)" } : undefined}
-            className={cn(
-              "absolute bg-white shadow-2xl dark:bg-zinc-900",
-              side === "right" && "inset-y-0 right-0 w-full max-w-sm animate-slide-in-right border-l border-zinc-200 dark:border-zinc-800",
-              side === "bottom" && cn("inset-x-0 bottom-0 rounded-t-2xl border-t border-zinc-200 dark:border-zinc-800", !entered && "animate-slide-up"),
-            )}
-          >
-            {side === "bottom" && (
-              <div className="flex cursor-grab touch-none justify-center py-2.5 active:cursor-grabbing" onPointerDown={onHandleDown} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onPointerCancel={onHandleUp}>
-                <div className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-              </div>
-            )}
-            <div className="flex items-center justify-between p-5 pt-1">
-              <h3 className="font-semibold">{side === "right" ? "筛选条件" : "分享到"}</h3>
-              <button onClick={() => setSide(null)} className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="关闭">
-                <Icon.X />
-              </button>
-            </div>
-            <div className="space-y-2 px-5 pb-8">
-              {["微信", "微博", "复制链接", "生成海报"].map((t) => (
-                <button key={t} className="flex w-full items-center justify-between rounded-lg border border-zinc-200 px-4 py-3 text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800">
-                  {t} <Icon.ChevronRight size={14} className="text-zinc-400" />
+      {side &&
+        createPortal(
+          <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setSide(null)}>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              onAnimationEnd={() => setEntered(true)}
+              style={side === "bottom" && entered ? { transform: `translateY(${dy}px)`, transition: drag.current ? "none" : "transform 0.25s cubic-bezier(0.32,0.72,0,1)" } : undefined}
+              className={cn(
+                "absolute bg-white shadow-2xl dark:bg-zinc-900",
+                side === "right" && "inset-y-0 right-0 w-full max-w-sm animate-slide-in-right border-l border-zinc-200 dark:border-zinc-800",
+                side === "bottom" && cn("inset-x-0 bottom-0 rounded-t-2xl border-t border-zinc-200 dark:border-zinc-800", !entered && "animate-slide-up"),
+              )}
+            >
+              {side === "bottom" && (
+                <div className="flex cursor-grab touch-none justify-center py-2.5 active:cursor-grabbing" onPointerDown={onHandleDown} onPointerMove={onHandleMove} onPointerUp={onHandleUp} onPointerCancel={onHandleUp}>
+                  <div className="h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                </div>
+              )}
+              <div className="flex items-center justify-between p-5 pt-1">
+                <h3 className="font-semibold">{side === "right" ? "筛选条件" : "分享到"}</h3>
+                <button onClick={() => setSide(null)} className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="关闭">
+                  <Icon.X />
                 </button>
-              ))}
+              </div>
+              <div className="space-y-2 px-5 pb-8">
+                {["微信", "微博", "复制链接", "生成海报"].map((t) => (
+                  <button key={t} className="flex w-full items-center justify-between rounded-lg border border-zinc-200 px-4 py-3 text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800">
+                    {t} <Icon.ChevronRight size={14} className="text-zinc-400" />
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -513,6 +525,7 @@ export default function Feedback() {
           "用数组管理队列，每条含 id；push 时 slice(-3) 限制数量。",
           "两段式移除：先标记 leaving 触发退出动画，300ms 后真正删除；手动关闭也走同一流程。",
           "容器 pointer-events-none，单条 pointer-events-auto，避免遮挡下方内容。",
+          "要固定到视口角落且不被任何容器裁切，用 createPortal 渲染到 document.body（本站预览容器带 overflow-hidden，示例即如此实现）。",
           "悬停暂停倒计时需要自己维护每条的剩余时间，sonner 等库已内置。",
           "生产环境推荐 sonner 库。",
         ]}
@@ -546,6 +559,7 @@ export default function Feedback() {
           "进入动画 scale 0.96→1 + 淡入；退出可省略或更快。",
           "打开时锁定 body 滚动（overflow: hidden），关闭时恢复。",
           "Esc 关闭；确认框的危险按钮不要默认聚焦。",
+          "若挂载在带 overflow / transform 的容器内，fixed 层会被裁切成容器大小——用 createPortal 渲染到 document.body 再 fixed，就能像 ⌘K 命令面板一样覆盖全屏（本站示例即如此）。",
           "原生 <dialog> 元素 + showModal() 自带焦点陷阱与 Esc，值得优先考虑。",
         ]}
         a11y={["role=\"dialog\" / \"alertdialog\" + aria-modal=\"true\" + aria-labelledby。", "焦点陷阱：Tab 循环在对话框内；关闭后焦点回到触发按钮。"]}
@@ -576,7 +590,7 @@ useEffect(() => { document.body.style.overflow = open ? "hidden" : ""; }, [open]
         level="进阶"
         description="从屏幕边缘滑入的面板。桌面端从右侧滑入（筛选、详情）；移动端从底部滑入（分享、操作列表），顶部带拖拽把手。"
         usage={["不离开当前页面查看 / 编辑详情。", "移动端的操作菜单（Action Sheet）。", "复杂筛选面板。"]}
-        points={["右侧：inset-y-0 right-0 + translateX(100%→0)；底部：inset-x-0 bottom-0 + translateY(100%→0) + rounded-t-2xl。", "缓动 cubic-bezier(0.32,0.72,0,1) 300ms。", "打开时锁定 body 滚动、Esc 关闭，与 Modal 一致。", "底部面板手势下拉关闭：把手上 pointerdown + setPointerCapture，move 跟随位移，松手超过阈值（80px）关闭，否则回弹；进入动画结束后再接管 transform，避免和 keyframes 打架。", "vaul 是 React 生态最好的 Bottom Sheet 库。"]}
+        points={["右侧：inset-y-0 right-0 + translateX(100%→0)；底部：inset-x-0 bottom-0 + translateY(100%→0) + rounded-t-2xl。", "缓动 cubic-bezier(0.32,0.72,0,1) 300ms。", "打开时锁定 body 滚动、Esc 关闭，与 Modal 一致。", "抽屉浮层也要 createPortal 到 document.body，否则会被预览容器 overflow 裁切，无法真正铺满屏幕。", "底部面板手势下拉关闭：把手上 pointerdown + setPointerCapture，move 跟随位移，松手超过阈值（80px）关闭，否则回弹；进入动画结束后再接管 transform，避免和 keyframes 打架。", "vaul 是 React 生态最好的 Bottom Sheet 库。"]}
         code={`<div className="fixed inset-0 z-50 bg-black/40" onClick={close}>
   <div onClick={e => e.stopPropagation()}
     className={cn("absolute bg-white shadow-2xl",

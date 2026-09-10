@@ -3,14 +3,14 @@ import { cn } from "../utils/cn";
 import { highlight, type HlClass } from "../utils/highlight";
 import { useCopy } from "../hooks/useCopy";
 
-/** 代码高亮配色：在 zinc 灰阶底上用低饱和色区分语法，注释保持中性 */
+/** 代码高亮配色：亮色模式用 700 级深色保对比度，dark 模式用 300/400 级亮色——两套都压在 zinc 灰阶上保持低饱和 */
 const HL_CLS: Record<HlClass, string> = {
-  kw: "text-violet-400",
-  tag: "text-emerald-300",
-  attr: "text-sky-300",
-  num: "text-orange-300",
-  str: "text-amber-200/90",
-  cmt: "text-zinc-600 italic",
+  kw: "text-violet-700 dark:text-violet-400",
+  tag: "text-emerald-700 dark:text-emerald-300",
+  attr: "text-sky-700 dark:text-sky-300",
+  num: "text-orange-700 dark:text-orange-300",
+  str: "text-amber-700 dark:text-amber-200/90",
+  cmt: "text-zinc-500 italic dark:text-zinc-500",
 };
 
 export function Highlighted({ code }: { code: string }) {

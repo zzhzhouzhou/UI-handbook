@@ -845,6 +845,7 @@ const [h, setH] = useState(0);
           "选中态实心，今天用下划线点标记，禁用日期 opacity-30。",
           "月份切换用 new Date(y, m ± 1, 1) 自动处理跨年。",
         ]}
+        previewClassName="overflow-visible"
         code={`const first = new Date(y, m, 1).getDay();
 const days  = new Date(y, m + 1, 0).getDate();
 const cells = [...Array(first).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];

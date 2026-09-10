@@ -71,7 +71,17 @@ src/
 │   └── useCopy.ts       # 复制文本并短暂显示反馈
 ├── sections/            # 10 个章节，每个文件是一章
 └── utils/               # cn / copy（剪贴板降级）/ highlight（语法高亮）/ scroll（快速锚点滚动）
+scripts/
+└── check-nav.mjs        # 目录一致性校验：nav.ts 与章节 Showcase id 双向对齐
 ```
+
+### 新增组件（三步，含自动兜底）
+
+站点是纯静态教程站（无后端），`nav.ts` 是唯一需要手动维护的目录数据源。新增组件只需：
+
+1. 在 `nav.ts` 对应章节的 `items` 里加一条（`id` / `title` / `level`）；
+2. 在 `src/sections/` 对应章节文件里加一个 `<Showcase id="同一 id">`（`id` 唯一，锚点、滚动侦测、⌘K 搜索都靠它）；
+3. 跑 `npm run build`——`prebuild` 会自动执行 `scripts/check-nav.mjs`，两侧有任何不一致会直接报错并列出清单，不会带着坏目录发布。
 
 ## 部署
 

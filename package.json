@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/check-nav.mjs",
     "build": "vite build",
+    "check:nav": "node scripts/check-nav.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
