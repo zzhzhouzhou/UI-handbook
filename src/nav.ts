@@ -38,6 +38,7 @@ export const NAV: NavGroup[] = [
       { id: "tag-input", label: "标签输入", en: "Tag Input", level: "进阶" },
       { id: "number-input", label: "数字步进器", en: "Number Input", level: "进阶" },
       { id: "countdown-button", label: "倒计时按钮", en: "Countdown", level: "进阶" },
+      { id: "split-button", label: "分割按钮", en: "Split Button", level: "进阶" },
     ],
   },
   {
@@ -58,6 +59,9 @@ export const NAV: NavGroup[] = [
       { id: "datepicker", label: "日期选择器", en: "Date Picker", level: "进阶" },
       { id: "dropzone", label: "文件上传区", en: "Dropzone", level: "进阶" },
       { id: "color-swatches", label: "颜色选择", en: "Color Swatches" },
+      { id: "multi-select", label: "多选下拉", en: "Multi Select", level: "进阶" },
+      { id: "date-range", label: "日期范围选择", en: "Date Range", level: "高级" },
+      { id: "form-validation", label: "表单校验", en: "Form Validation", level: "进阶" },
     ],
   },
   {
@@ -78,6 +82,7 @@ export const NAV: NavGroup[] = [
       { id: "scroll-progress", label: "阅读进度 / 收缩头部", en: "Scroll Progress", level: "进阶" },
       { id: "bottom-tabs", label: "底部标签栏", en: "Bottom Tab Bar", level: "进阶" },
       { id: "notification-panel", label: "通知面板", en: "Notifications", level: "进阶" },
+      { id: "scroll-spy-toc", label: "页内目录 · 滚动侦测", en: "Scroll Spy TOC", level: "高级" },
     ],
   },
   {
@@ -117,6 +122,8 @@ export const NAV: NavGroup[] = [
       { id: "masonry", label: "瀑布流", en: "Masonry", level: "进阶" },
       { id: "description-list", label: "描述列表", en: "Description List" },
       { id: "blockquote", label: "引用块", en: "Blockquote" },
+      { id: "virtual-list", label: "虚拟滚动列表", en: "Virtual List", level: "高级" },
+      { id: "transfer", label: "穿梭框", en: "Transfer", level: "进阶" },
     ],
   },
   {
@@ -136,6 +143,7 @@ export const NAV: NavGroup[] = [
       { id: "knob", label: "旋钮", en: "Knob", level: "进阶" },
       { id: "glass", label: "毛玻璃", en: "Glass" },
       { id: "beam", label: "边框光束", en: "Beam", level: "高级" },
+      { id: "mesh-gradient", label: "流动渐变背景", en: "Mesh Gradient", level: "进阶" },
     ],
   },
   {
@@ -159,6 +167,7 @@ export const NAV: NavGroup[] = [
       { id: "word-reveal", label: "滚动逐字点亮", en: "Text Reveal", level: "进阶" },
       { id: "resizable", label: "可拖拽分栏", en: "Resizable", level: "进阶" },
       { id: "noise", label: "噪点纹理", en: "Noise" },
+      { id: "text-highlight", label: "搜索高亮", en: "Text Highlight", level: "进阶" },
     ],
   },
   {
@@ -172,6 +181,7 @@ export const NAV: NavGroup[] = [
       { id: "z-index", label: "层级 z-index 标准", en: "Elevation" },
       { id: "motion-standard", label: "动效时长标准", en: "Motion" },
       { id: "breakpoints", label: "响应式断点标准", en: "Breakpoints" },
+      { id: "keyboard", label: "键盘交互标准", en: "Keyboard" },
     ],
   },
   {
@@ -184,6 +194,7 @@ export const NAV: NavGroup[] = [
       { id: "form-ux", label: "表单体验", en: "Form UX" },
       { id: "darkmode", label: "深色模式", en: "Dark Mode" },
       { id: "checklist", label: "设计走查清单", en: "Checklist" },
+      { id: "error-pattern", label: "错误与重试模式", en: "Error & Retry" },
     ],
   },
 ];

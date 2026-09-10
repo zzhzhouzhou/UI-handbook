@@ -913,6 +913,111 @@ const hoverable = matchMedia("(hover: hover)").matches;
         <NotificationPanelDemo />
       </Showcase>
 
+      <Showcase
+        id="scroll-spy-toc"
+        title="页内目录 · 滚动侦测"
+        en="Scroll Spy TOC"
+        level="高级"
+        description="长文右侧的小型目录：滚动时自动高亮当前阅读的章节，点击目录项平滑跳到对应内容。本站侧边栏的「当前位置跟随」就是同一套原理。"
+        usage={["长文档、博客、帮助中心、组件手册。", "内容 ≥ 3 屏时才有必要。"]}
+        points={["核心是一个滚动监听 + 「参考线」判定：取最后一个顶边越过参考线的章节为当前项。", "scroll 事件用 rAF 合并成每帧最多一次计算，避免高频 setState。", "TOC 项 aria-current=\"location\"；点击用 scrollIntoView({ block: \"start\" })。", "监听容器自身的 scroll（这里是内部可滚动 div），不是 window。", "生产环境可用 IntersectionObserver 代替 scroll 监听，两者结果等价。"]}
+        a11y={["nav + aria-label=\"页内目录\"；当前项 aria-current 标记。", "目录项是 button，键盘可 Tab 聚焦、Enter 跳转。"]}
+        code={`const onScroll = () => {
+  if (raf) return;
+  raf = requestAnimationFrame(() => {
+    raf = 0;
+    const line = scroller.getBoundingClientRect().top + 16; // 参考线
+    let cur = 0;
+    sections.forEach((sec, i) => {
+      if (sec.getBoundingClientRect().top <= line) cur = i; // 最后一个越过参考线的
+    });
+    setActive(cur);
+  });
+};
+scroller.addEventListener("scroll", onScroll, { passive: true });`}
+      >
+        <ScrollSpyTocDemo />
+      </Showcase>
+
     </section>
+  );
+}
+
+/* ---------------- Scroll Spy TOC ---------------- */
+const TOC_SECTIONS = [
+  { id: "overview", title: "总览", body: "页内目录（Table of Contents）让长文档的读者随时知道「自己读到哪」，并能在章节之间快速跳转。它由两部分组成：右侧跟随滚动高亮的小型导航，以及左侧可滚动的内容区。" },
+  { id: "visual", title: "视觉层级", body: "目录项要足够小、足够安静——它只是地图，不是内容本身。默认 12px 灰字，当前项加深加粗，让「位置感」只通过一处变化传达。可选的还有：当前章节的序号、章节分组的小标题、折叠/展开。" },
+  { id: "feedback", title: "反馈机制", body: "高亮的切换时机比切换本身更重要：太早切换会显得急躁，太晚切换会让读者觉得目录失灵。参考线放在视口上部约 16px 处，也就是「正在读的段落顶部」的位置，滚动时连续、不跳变。" },
+  { id: "perf", title: "性能预算", body: "滚动监听每帧触发，但状态更新不能每帧都来。做法是 rAF 合并：同一帧内多次 scroll 只计算一次。章节数量再多几十个也不会有压力；如果内容在懒加载后改变高度，重新计算一次即可。" },
+  { id: "a11y", title: "可访问性", body: "目录用 nav 包裹并带 aria-label，当前项加 aria-current=\"location\"。目录项是真实的 button，键盘用户可以 Tab 到它并按 Enter 跳转。参考线判定只依赖几何位置，读屏用户不依赖它也能完整使用内容。" },
+];
+function ScrollSpyTocDemo() {
+  const [active, setActive] = useState(0);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // 滚动容器内计算当前可见节：最后一个顶边越过参考线的节
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    let raf = 0;
+    const compute = () => {
+      raf = 0;
+      const kids = Array.from(el.children) as HTMLElement[];
+      const line = el.getBoundingClientRect().top + 16;
+      let cur = 0;
+      kids.forEach((k, i) => {
+        if (k.getBoundingClientRect().top <= line) cur = i;
+      });
+      setActive(cur);
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(compute);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    compute();
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const jump = (i: number) => {
+    const child = scrollerRef.current?.children[i] as HTMLElement | undefined;
+    child?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <div className="flex w-full max-w-2xl gap-4">
+      <nav aria-label="页内目录" className="w-28 shrink-0">
+        <div className="space-y-px">
+          {TOC_SECTIONS.map((s, i) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => jump(i)}
+              aria-current={active === i ? "location" : undefined}
+              className={cn(
+                "w-full rounded-md px-2 py-1.5 text-left text-xs transition-colors",
+                active === i ? "bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-white" : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900",
+              )}
+            >
+              {s.title}
+            </button>
+          ))}
+        </div>
+      </nav>
+      <div ref={scrollerRef} className="max-h-72 flex-1 space-y-3 overflow-y-auto rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+        {TOC_SECTIONS.map((s, i) => (
+          <section key={s.id} aria-labelledby={`toc-${s.id}`} className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-900/50">
+            <h4 id={`toc-${s.id}`} className="text-sm font-semibold">
+              {i + 1}. {s.title}
+            </h4>
+            <p className="mt-2 text-xs leading-6 text-zinc-500 dark:text-zinc-400">{s.body}</p>
+          </section>
+        ))}
+      </div>
+    </div>
   );
 }

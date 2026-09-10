@@ -334,7 +334,7 @@
 
 作者：zzh_zhou · **Garbage Human Studio**（本项目由 AI 辅助开发）
 
-本规范的配套教程网站包含 10 章、104 个组件的可交互演示：每个组件都能在线操作、查看要点说明并复制示例代码。
+本规范的配套教程网站包含 10 章、115 个组件的可交互演示：每个组件都能在线操作、查看要点说明并复制示例代码。
 
 - 项目主页：<https://github.com/zzhzhouzhou/UI-handbook>
 - 在线阅读（Cloudflare）：<https://uihandbook.zzhzhou2026.workers.dev>

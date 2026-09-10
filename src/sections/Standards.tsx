@@ -1,5 +1,5 @@
 import { Showcase, SectionHeader } from "../components/Showcase";
-import { Icon } from "../components/primitives";
+import { Icon, Kbd } from "../components/primitives";
 import { cn } from "../utils/cn";
 
 /* 触控与控件尺寸标准 */
@@ -321,6 +321,63 @@ h1, h2, h3 { letter-spacing: -0.02em; }`}
       >
         <BreakpointStandard />
       </Showcase>
+
+      <Showcase
+        id="keyboard"
+        title="键盘交互标准"
+        en="Keyboard Interaction Standards"
+        description="键盘是可访问性的底线：所有功能都要能用键盘完成。核心三条——焦点永远可见、Tab 顺序等于阅读顺序、覆盖层必配 Esc。下面是通用快捷键与焦点规则速查。"
+        usage={["评审任何组件时对照检查。", "设计自定义组件（菜单、下拉、弹窗）时直接套用。"]}
+        points={["焦点环只响应 :focus-visible：键盘用户必须有，鼠标用户不被打扰；必要时用 :focus-visible:not(:active) 再收窄。", "Tab 顺序 = DOM 顺序：不要用 tabindex > 0；复杂组件内部用 roving tabindex（容器 tabindex=0，内部方向键移动）。", "覆盖层（弹窗/菜单/抽屉）必须能 Esc 关闭，关闭后焦点归还触发元素。", "Enter 激活按钮，空格切换开关/复选；方向键移动单选组与菜单。", "快捷键（如 ⌘K）必须给出可发现的替代路径（按钮/菜单），不能只靠快捷键。"]}
+        a11y={["快捷键冲突时提供修改入口；全局快捷键在输入框聚焦时应暂时停用。", "高对比与放大 200% 下焦点环依然清晰。"]}
+        dotted={false}
+      >
+        <KeyboardStandard />
+      </Showcase>
     </section>
+  );
+}
+
+/* 键盘交互标准 */
+function KeyboardStandard() {
+  const rows: [string, string][] = [
+    ["Esc", "关闭弹窗 / 菜单 / 抽屉；取消当前操作"],
+    ["Enter", "提交表单；确认对话框；激活聚焦的按钮"],
+    ["Tab / ⇧Tab", "焦点前进 / 后退；顺序 = DOM 顺序"],
+    ["空格", "切换开关 / 复选；按钮聚焦时滚动页面"],
+    ["↑ ↓ ← →", "单选组 / 菜单 / 网格内移动选项"],
+    ["⌘K / Ctrl+K", "唤起命令面板（本站示例）"],
+    ["/", "聚焦搜索框（本站示例）"],
+    ["⌫", "删除 / 移除（列表项聚焦时）"],
+  ];
+  return (
+    <div className="w-full max-w-xl space-y-5">
+      <div>
+        <div className="mb-2 text-xs font-medium text-zinc-500">通用快捷键速查</div>
+        <div className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
+          {rows.map(([k, d], i) => (
+            <div key={k} className={cn("flex items-center gap-3 px-3 py-2 text-sm", i > 0 && "border-t border-zinc-100 dark:border-zinc-900")}>
+              <span className="w-28 shrink-0">
+                <Kbd>{k}</Kbd>
+              </span>
+              <span className="text-zinc-600 dark:text-zinc-300">{d}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {[
+          ["焦点可见", "只用 :focus-visible 显示焦点环：键盘用户必须有，鼠标用户不打扰；焦点一旦进入页面必须永远可见。"],
+          ["焦点顺序", "Tab 顺序 = DOM 顺序。复杂组件用 roving tabindex：容器一个 tabindex=0，内部用方向键在选项中移动。"],
+          ["Esc 兜底", "任何覆盖层都能 Esc 关闭，并把焦点归还给触发它的元素，避免焦点「丢失」。"],
+          ["激活语义", "Enter 激活按钮，空格切换开关/复选；单选组方向键移动后按空格确认。"],
+        ].map(([t, d]) => (
+          <div key={t} className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-800">
+            <div className="text-[13px] font-medium">{t}</div>
+            <p className="mt-1 text-xs leading-5 text-zinc-500 dark:text-zinc-400">{d}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

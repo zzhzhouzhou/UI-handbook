@@ -342,6 +342,91 @@ const valid = /^\\S+@\\S+\\.\\S+$/.test(email);
       >
         <ChecklistDemo />
       </Showcase>
+
+      <Showcase
+        id="error-pattern"
+        title="错误与重试模式"
+        en="Error & Retry Pattern"
+        description="请求失败时用户看到的不该只有一行红字。一个完整的错误状态包含三件事：发生了什么（说明）、为什么（原因）、怎么办（动作）。下面的示例演示了「保存设置」失败后的完整反馈闭环。"
+        usage={["表单提交、设置保存、任何异步请求。", "错误是常态，不是异常——每个异步操作都要设计失败态。"]}
+        points={["错误信息三要素：说明（保存失败）+ 原因（网络不稳定）+ 动作（重试），缺一不可。", "内联展示在操作附近，而不是全局弹窗打断；role=\"alert\" 让读屏立即播报。", "重试按钮复用主按钮的加载态（loading + 文案切换），避免「点了没反应」。", "按钮文案随状态变化：保存设置 → 保存中… → 重试，状态本身就是反馈。", "成功也给出轻量确认（成功条 / toast），让用户知道流程已结束。"]}
+        a11y={["错误容器 role=\"alert\"，成功容器 role=\"status\"；两者 aria-live 语义不同。", "重试后焦点留在按钮上；错误不自动消失（不设超时），等用户操作。"]}
+        code={`const run = () => {
+  setPhase("loading");
+  setTimeout(() => setPhase(Math.random() < 0.5 ? "error" : "success"), 1000);
+};
+
+{phase === "error" && (
+  <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3">
+    <div className="text-[13px] font-medium text-red-700">保存失败</div>
+    <p className="text-xs text-red-600">网络连接不稳定，请检查后重试。</p>
+  </div>
+)}
+<button onClick={run} disabled={phase === "loading"}>
+  {phase === "loading" ? "保存中…" : phase === "error" ? "重试" : "保存设置"}
+</button>`}
+      >
+        <ErrorPatternDemo />
+      </Showcase>
     </section>
+  );
+}
+
+/* 错误与重试模式 */
+function ErrorPatternDemo() {
+  const [phase, setPhase] = useState<"idle" | "loading" | "error" | "success">("idle");
+  const run = () => {
+    setPhase("loading");
+    window.setTimeout(() => {
+      setPhase(Math.random() < 0.55 ? "error" : "success");
+    }, 1100);
+  };
+  return (
+    <div className="w-full max-w-md">
+      <div className="rounded-xl border border-zinc-200 p-5 dark:border-zinc-800">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          <Icon.Settings size={15} /> 界面偏好设置
+        </div>
+        <div className="mt-4 space-y-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-zinc-600 dark:text-zinc-300">紧凑模式</span>
+            <span className="h-5 w-9 rounded-full bg-zinc-900 p-0.5 dark:bg-white" aria-hidden="true">
+              <span className="block h-4 w-4 translate-x-4 rounded-full bg-white transition-transform dark:bg-zinc-900" />
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-zinc-600 dark:text-zinc-300">自动保存</span>
+            <span className="flex items-center gap-1.5 text-xs text-zinc-400">
+              <Icon.Check size={12} /> 已开启
+            </span>
+          </div>
+        </div>
+        {phase === "error" && (
+          <div role="alert" className="mt-4 flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/40">
+            <Icon.Alert size={15} className="mt-0.5 shrink-0 text-red-600 dark:text-red-400" />
+            <div className="min-w-0">
+              <div className="text-[13px] font-medium text-red-700 dark:text-red-300">保存失败</div>
+              <p className="mt-0.5 text-xs leading-5 text-red-600/90 dark:text-red-400/90">网络连接不稳定，保存请求未送达。请检查网络后重试。</p>
+            </div>
+          </div>
+        )}
+        {phase === "success" && (
+          <div role="status" className="mt-4 flex items-center gap-2 rounded-lg border border-zinc-300 bg-zinc-50 px-3 py-2.5 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+            <Icon.Check size={15} className="shrink-0 text-zinc-900 dark:text-white" /> 已保存
+          </div>
+        )}
+        <div className="mt-4 flex gap-2">
+          <Button onClick={run} loading={phase === "loading"} className="flex-1">
+            {phase === "loading" ? "保存中…" : phase === "error" ? "重试" : "保存设置"}
+          </Button>
+          {phase === "error" && (
+            <Button variant="ghost" onClick={() => setPhase("idle")}>
+              取消
+            </Button>
+          )}
+        </div>
+        <p className="mt-3 text-center text-[11px] text-zinc-400">示例有约 55% 概率失败，多试几次可看到完整流程</p>
+      </div>
+    </div>
   );
 }

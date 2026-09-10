@@ -676,6 +676,49 @@ draw();`}>
 @keyframes beam { from { offset-distance: 0% } to { offset-distance: 100% } }`}>
         <BeamDemo />
       </Showcase>
+
+      <Showcase
+        id="mesh-gradient"
+        title="流动渐变背景"
+        en="Mesh Gradient"
+        level="进阶"
+        description="几个大号模糊光斑（blur-3xl 圆）在纯色底上缓慢浮动，互相叠加出流动的渐变。纯 CSS 实现，零 JS、零图片，黑白灰风格下也能有质感。"
+        usage={["Hero 背景、登录页、空状态卡片。", "配合毛玻璃面板叠加内容。"]}
+        points={["每个光斑 = 一个 rounded-full 圆 + blur-3xl（大半径高斯模糊），4 个光斑不同位置互相叠出渐变色。", "复用 animate-float 上下浮动，用负 animation-delay 错开相位，产生「流动」而不是「同频呼吸」。", "颜色克制：浅色下 zinc-200~500 低透明度，深色下 zinc-500~800——保持站点黑白灰基调。", "移动端性能：blur-3xl 大区域模糊有开销，可降级为普通 radial-gradient 背景。", "prefers-reduced-motion 下动画被全局关闭，退化为静态渐变。"]}
+        code={`<div className="relative h-52 overflow-hidden">
+  <div className="absolute inset-0 bg-zinc-50 dark:bg-zinc-950" />
+  <div className="absolute -left-10 -top-10 h-52 w-52 animate-float rounded-full bg-zinc-300/80 blur-3xl" />
+  <div className="absolute -right-8 top-6 h-44 w-44 animate-float rounded-full bg-zinc-400/70 blur-3xl"
+    style={{ animationDelay: "-1.2s" }} />
+  <div className="absolute bottom-0 left-1/4 h-48 w-48 animate-float rounded-full bg-zinc-200 blur-3xl"
+    style={{ animationDelay: "-2.4s" }} />
+  {/* 内容叠在上面 */}
+  <div className="absolute inset-0 grid place-items-center">
+    <div className="rounded-xl border border-white/70 bg-white/70 backdrop-blur-md">卡片</div>
+  </div>
+</div>`}
+      >
+        <MeshGradientDemo />
+      </Showcase>
     </section>
+  );
+}
+
+/* ---------------- Mesh Gradient ---------------- */
+function MeshGradientDemo() {
+  return (
+    <div className="relative h-52 w-full max-w-2xl overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
+      <div className="absolute inset-0 bg-zinc-50 dark:bg-zinc-950" />
+      <div className="absolute -left-10 -top-10 h-52 w-52 animate-float rounded-full bg-zinc-300/80 blur-3xl dark:bg-zinc-700/60" />
+      <div className="absolute -right-8 top-6 h-44 w-44 animate-float rounded-full bg-zinc-400/70 blur-3xl dark:bg-zinc-600/50" style={{ animationDelay: "-1.2s" }} />
+      <div className="absolute bottom-0 left-1/4 h-48 w-48 animate-float rounded-full bg-zinc-200 blur-3xl dark:bg-zinc-800" style={{ animationDelay: "-2.4s" }} />
+      <div className="absolute -bottom-6 right-1/4 h-36 w-36 animate-float rounded-full bg-zinc-500/50 blur-2xl dark:bg-zinc-500/40" style={{ animationDelay: "-0.6s" }} />
+      <div className="absolute inset-0 grid place-items-center p-4">
+        <div className="rounded-xl border border-white/70 bg-white/70 px-6 py-4 text-center backdrop-blur-md dark:border-white/10 dark:bg-zinc-900/60">
+          <div className="text-sm font-medium">流动渐变背景</div>
+          <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">4 个模糊光斑缓慢浮动 · blur-3xl + animate-float</div>
+        </div>
+      </div>
+    </div>
   );
 }

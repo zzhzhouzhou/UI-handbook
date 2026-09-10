@@ -828,6 +828,195 @@ items.forEach((it, i) => cols[i % n].push(it));`}
         <BlockquoteDemo />
       </Showcase>
 
+      <Showcase
+        id="virtual-list"
+        title="虚拟滚动列表"
+        en="Virtual List"
+        level="高级"
+        description="一万行数据只渲染屏幕可见的 20 多行：外层容器固定高度，内层撑起总高度当「滚动轨道」，行用 translateY 绝对定位到自己的位置。"
+        usage={["十万级日志、聊天记录、长菜单、无限表格。", "行高固定时最简单；行高可变需要测量缓存。"]}
+        points={["轨道高度 = 总数 × 行高，行绝对定位 translateY(i × 行高)——浏览器的滚动条因此是正确的。", "onScroll 里按 scrollTop / 行高算出首行，再各加 overscan（前后多渲染几行，快速滚动不露白）。", "只渲染 start..end 区间，DOM 数量恒定，长列表性能与列表长度无关。", "key 用行号；行内容保持轻量（不要每行写复杂 state）。", "行高不固定时：先估计高度渲染，测量后再校正（或直接用 content-visibility 的 contain-intrinsic-size 近似）。"]}
+        a11y={["容器加 role=\"list\"，行 role=\"listitem\"；aria-setsize / aria-posinset 告知读屏真实总数与位置。", "键盘滚动依赖原生滚动条，方向键可滚动（容器可聚焦时）。"]}
+        code={`const ROW = 40;                // 固定行高
+const onScroll = () => {
+  const start = Math.max(0, Math.floor(el.scrollTop / ROW) - overscan);
+  const end = Math.min(total, start + Math.ceil(el.clientHeight / ROW) + overscan);
+  setRange({ start, end });
+};
+
+<div style={{ height: total * ROW }} className="relative">   {/* 轨道 */}
+  {rows.map(i => (
+    <div key={i} style={{ transform: \`translateY(\${i * ROW}px)\` }}
+      className="absolute inset-x-0 h-10 border-b px-3">{i}</div>
+  ))}
+</div>`}
+      >
+        <VirtualListDemo />
+      </Showcase>
+
+      <Showcase
+        id="transfer"
+        title="穿梭框"
+        en="Transfer"
+        level="进阶"
+        description="左右两栏 + 中间方向按钮：在候选与已选之间批量移动成员。两栏各自的已选项用 checkbox 标记，中间按钮负责移动。"
+        usage={["分配权限、选择负责人、配置可见性。", "选项多且需要「从大池子里挑一批」时。"]}
+        points={["中间按钮是「动作」，候选右侧列出所有可选项与已选项；两侧共享同一选中集合。", "按钮 disabled 当对应方向没有可移动的选中项，比点了没反应好。", "移动后清空选中集，避免残留选中引向「幽灵移动」。", "左侧保留搜索，大列表必配。", "列表项复用原生 button + checkbox 图形，天然可键盘操作。"]}
+        a11y={["箭头按钮 aria-label=\"移到右侧 / 移到左侧\"；已选项用 aria-selected 或 checkbox 语义。", "移动后焦点保持在按钮上，读屏可感知列表变化（示例用数量文字同步）。"]}
+        code={`const [sel, setSel] = useState(new Set());
+const toggle = (n) => setSel(s => { const ns = new Set(s);
+  ns.has(n) ? ns.delete(n) : ns.add(n); return ns; });
+const move = (toRight) => {
+  const target = [...sel].filter(n => toRight ? left.includes(n) : right.includes(n));
+  setRight(r => toRight ? [...r, ...target].sort() : r.filter(n => !target.includes(n)));
+  setSel(new Set());
+};
+
+<button onClick={() => move(true)} disabled={!canMoveRight} aria-label="移到右侧">
+  <Arrow />
+</button>`}
+      >
+        <TransferDemo />
+      </Showcase>
+
     </section>
+  );
+}
+
+/* ---------------- Virtual List ---------------- */
+const ROW_H = 40;
+const VL_TOTAL = 10000;
+const VL_WORDS = ["设计令牌", "视觉层级", "间距栅格", "圆角阴影", "动效曲线", "交互状态", "反馈机制", "响应式断点", "触控尺寸", "色彩对比度"];
+function VirtualListDemo() {
+  const [range, setRange] = useState({ start: 0, end: 30 });
+  const ref = useRef<HTMLDivElement>(null);
+  const onScroll = () => {
+    const el = ref.current;
+    if (!el) return;
+    const start = Math.max(0, Math.floor(el.scrollTop / ROW_H) - 5);
+    const end = Math.min(VL_TOTAL, start + Math.ceil(el.clientHeight / ROW_H) + 10);
+    setRange({ start, end });
+  };
+  const rows: number[] = [];
+  for (let i = range.start; i < range.end; i++) rows.push(i);
+  return (
+    <div className="w-full max-w-md overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
+      <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900">
+        <span>
+          共 {VL_TOTAL.toLocaleString()} 行 · 每行 {ROW_H}px
+        </span>
+        <span className="font-mono tabular-nums">只渲染 {rows.length} 行</span>
+      </div>
+      <div ref={ref} onScroll={onScroll} className="relative h-64 overflow-y-auto">
+        <div className="relative w-full" style={{ height: VL_TOTAL * ROW_H }}>
+          {rows.map((i) => (
+            <div key={i} style={{ transform: `translateY(${i * ROW_H}px)` }} className="absolute inset-x-0 flex h-10 items-center gap-3 border-b border-zinc-100 px-3 text-sm dark:border-zinc-900">
+              <span className="w-14 shrink-0 font-mono text-xs text-zinc-400">#{i}</span>
+              <span className="truncate">{VL_WORDS[i % VL_WORDS.length]} · 示例数据行</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Transfer ---------------- */
+const T_ALL = ["张伟", "李娜", "王芳", "刘洋", "陈静", "杨帆", "赵磊", "黄敏", "周杰", "吴倩", "郑爽", "孙悦"];
+function CheckIcon({ sel, n }: { sel: Set<string>; n: string }) {
+  return (
+    <span className={cn("grid h-4 w-4 shrink-0 place-items-center rounded border", sel.has(n) ? "border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900" : "border-zinc-300 dark:border-zinc-600")}>
+      {sel.has(n) && <Icon.Check size={10} />}
+    </span>
+  );
+}
+function TransferDemo() {
+  const [right, setRight] = useState<string[]>(["李娜", "陈静"]);
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [q, setQ] = useState("");
+  const left = T_ALL.filter((n) => !right.includes(n));
+  const leftFiltered = left.filter((n) => n.includes(q.trim()));
+  const toggleSel = (n: string) =>
+    setSel((s) => {
+      const ns = new Set(s);
+      if (ns.has(n)) ns.delete(n);
+      else ns.add(n);
+      return ns;
+    });
+  const move = (toRight: boolean) => {
+    const target = [...sel].filter((n) => (toRight ? left.includes(n) : right.includes(n)));
+    if (!target.length) return;
+    setRight((r) => (toRight ? [...r, ...target].sort((a, b) => a.localeCompare(b, "zh")) : r.filter((n) => !target.includes(n))));
+    setSel(new Set());
+  };
+
+    return (
+    <div className="flex w-full max-w-xl items-center gap-3">
+      <div className="min-w-0 flex-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
+          <span className="text-xs font-medium">候选成员</span>
+          <span className="font-mono text-xs text-zinc-400">{leftFiltered.length} 人</span>
+        </div>
+        <div className="border-b border-zinc-100 p-2 dark:border-zinc-900">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="搜索成员…"
+            aria-label="搜索候选成员"
+            className="h-7 w-full rounded-md border border-zinc-200 bg-zinc-50 px-2 text-xs outline-none transition focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:border-white"
+          />
+        </div>
+        <ul className="max-h-44 overflow-y-auto p-1">
+          {leftFiltered.map((n) => (
+            <li key={n}>
+              <button type="button" onClick={() => toggleSel(n)} aria-pressed={sel.has(n)} className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                <CheckIcon sel={sel} n={n} />
+                {n}
+              </button>
+            </li>
+          ))}
+          {leftFiltered.length === 0 && <li className="px-2 py-4 text-center text-xs text-zinc-400">无匹配成员</li>}
+        </ul>
+      </div>
+
+      <div className="flex shrink-0 flex-col gap-2">
+        <button
+          type="button"
+          onClick={() => move(true)}
+          disabled={![...sel].some((n) => left.includes(n))}
+          aria-label="移到右侧"
+          className="grid h-9 w-9 place-items-center rounded-lg border border-zinc-300 text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+        >
+          <Icon.Arrow size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={() => move(false)}
+          disabled={![...sel].some((n) => right.includes(n))}
+          aria-label="移到左侧"
+          className="grid h-9 w-9 place-items-center rounded-lg border border-zinc-300 text-zinc-600 transition hover:bg-zinc-50 disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
+        >
+          <Icon.ChevronLeft size={15} />
+        </button>
+      </div>
+
+      <div className="min-w-0 flex-1 rounded-xl border border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-zinc-800">
+          <span className="text-xs font-medium">已选成员</span>
+          <span className="font-mono text-xs text-zinc-400">{right.length} 人</span>
+        </div>
+        <ul className="max-h-44 overflow-y-auto p-1">
+          {right.map((n) => (
+            <li key={n}>
+              <button type="button" onClick={() => toggleSel(n)} aria-pressed={sel.has(n)} className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-[13px] transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900">
+                <CheckIcon sel={sel} n={n} />
+                {n}
+              </button>
+            </li>
+          ))}
+          {right.length === 0 && <li className="px-2 py-4 text-center text-xs text-zinc-400">暂无成员</li>}
+        </ul>
+      </div>
+    </div>
   );
 }

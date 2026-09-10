@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Showcase, SectionHeader } from "../components/Showcase";
 import { Button, Icon, Avatar, inputCls } from "../components/primitives";
 import { cn } from "../utils/cn";
@@ -486,6 +486,110 @@ useEffect(() => {
       >
         <CountdownButtonDemo />
       </Showcase>
+
+      <Showcase
+        id="split-button"
+        title="分割按钮"
+        en="Split Button"
+        level="进阶"
+        description="主按钮 + 紧邻的展开箭头：主按钮直接执行当前操作，箭头展开菜单切换操作模式。比两个独立按钮更省空间，语义也更清晰。"
+        usage={["编辑器「保存 / 另存为 / 导出」、富文本工具栏、批量操作。", "一个主要动作 + 一组相关的次要动作。"]}
+        points={["两个按钮拼成一体：主按钮去掉右侧圆角（rounded-r-none），箭头按钮补上左侧圆角。", "箭头按钮 aria-haspopup=\"menu\" + aria-expanded；菜单 role=\"menu\"，菜单项 role=\"menuitem\"。", "点击外部（mousedown）与 Esc 都能关闭菜单。", "危险操作（删除）在菜单内用红色 + hover 红底强调，防止误触。", "展开箭头随状态旋转 180°，一眼可辨当前是否打开。"]}
+        a11y={["主按钮 aria-label 说明当前模式；菜单项本身就是 button，天然可 Tab 聚焦、Enter 执行。", "菜单要用 shadow + 较高 z-index 浮在内容之上，别被预览容器裁切。"]}
+        previewClassName="overflow-visible"
+        code={`<div className="relative flex">
+  <button onClick={run} className="rounded-r-none bg-zinc-900 px-4 text-white">{mode}</button>
+  <button aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}
+    className="grid w-9 place-items-center rounded-r-lg bg-zinc-900 text-white">
+    <ChevronDown className={cn("transition-transform", open && "rotate-180")} />
+  </button>
+  {open && (
+    <div role="menu" className="absolute right-0 top-full z-20 mt-1.5 w-44 rounded-lg border bg-white p-1 shadow-xl">
+      {actions.map(a => (
+        <button key={a} role="menuitem" onClick={() => pick(a)}
+          className="flex w-full rounded-md px-2.5 py-1.5 text-left text-sm hover:bg-zinc-100">{a}</button>
+      ))}
+    </div>
+  )}
+</div>`}
+      >
+        <SplitButtonDemo />
+      </Showcase>
     </section>
+  );
+}
+
+/* ---------------- Split Button ---------------- */
+function SplitButtonDemo() {
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState("保存");
+  const [toast, setToast] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // 点击外部 / Esc 关闭菜单
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const actions = ["保存", "另存为…", "导出 PDF", "删除文件"];
+  const pick = (label: string) => {
+    setMode(label);
+    setOpen(false);
+    setToast(`已执行：${label}`);
+    window.setTimeout(() => setToast(null), 1800);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div ref={ref} className="relative flex items-stretch">
+        <Button onClick={() => pick(mode)} className="rounded-r-none" aria-label={`执行当前操作：${mode}`}>
+          {mode}
+        </Button>
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="grid w-9 place-items-center rounded-r-lg bg-zinc-900 text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          <Icon.ChevronDown size={14} className={cn("transition-transform duration-200", open && "rotate-180")} />
+        </button>
+        {open && (
+          <div role="menu" className="absolute right-0 top-full z-20 mt-1.5 w-44 animate-scale-in rounded-lg border border-zinc-200 bg-white p-1 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+            {actions.map((a) => (
+              <button
+                key={a}
+                type="button"
+                role="menuitem"
+                onClick={() => pick(a)}
+                className={cn(
+                  "flex w-full items-center rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
+                  a === "删除文件"
+                    ? "text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                    : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800",
+                  a === mode && "font-medium",
+                )}
+              >
+                {a}
+                {a === mode && <Icon.Check size={13} className="ml-auto text-zinc-400" />}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <p role="status" className="min-h-5 text-xs text-zinc-400">
+        {toast ?? "主按钮直接执行当前操作，▾ 展开菜单切换操作模式"}
+      </p>
+    </div>
   );
 }

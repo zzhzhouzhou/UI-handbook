@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as RPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { Showcase, SectionHeader } from "../components/Showcase";
 import { Button, Icon } from "../components/primitives";
 import { cn } from "../utils/cn";
@@ -802,6 +802,67 @@ const onUp = () => {
 }`} codeLang="css">
         <NoiseDemo />
       </Showcase>
+
+      <Showcase
+        id="text-highlight"
+        title="搜索高亮"
+        en="Text Highlight"
+        level="进阶"
+        description="输入关键词，正文中的命中片段被高亮标记，并显示命中数量。搜索页、文档内检索、聊天记录查找都靠这一招。"
+        usage={["站内搜索结果的命中标注、文档查找（⌘F 强化）、对话记录检索。"]}
+        points={["把关键词转义后构造正则（保留 i 忽略大小写），用 String.split(re) 把文本切成「命中 / 未命中」交替的片段数组，渲染时命中片段包 <mark>。", "关键词含正则元字符（. * + ? [ ] 等）时必须先转义，否则用户输入能把正则写坏。", "高亮样式要足够醒目但克制：本站用实心反色，普通搜索用浅色底 + 加粗即可。", "计数 = 命中片段数；空关键词时整段不处理。", "鼠标选中文本做高亮是同一思路的变体（用 Selection API 拿 range）。"]}
+        a11y={["<mark> 有「标记」语义，读屏软件会特别播报；搜索结果建议用 aria-label 说明命中数。", "输入框有 aria-label；高亮不是唯一信息通道（文字仍然全文可读）。"]}
+        code={`const esc = q.replace(/[.*+?^\${}()|[\\]\\\\]/g, "\\\\$&");
+const re = new RegExp(\`(\${esc})\`, "gi");
+const parts = text.split(re).map((t, i) => ({ t, hl: i % 2 === 1 }));
+
+{parts.map((p, i) =>
+  p.hl ? <mark key={i}>{p.t}</mark> : <span key={i}>{p.t}</span>,
+)}`}
+      >
+        <TextHighlightDemo />
+      </Showcase>
     </section>
+  );
+}
+
+/* ---------------- Text Highlight ---------------- */
+const HL_TEXT = "滚动侦测（scroll spy）让侧边栏跟随阅读位置：页面滚动时，目录高亮当前章节，并自动滚动到对应条目。实现要点是「参考线」判定——最后一个顶边越过参考线的元素就是当前项。配合 rAF 合并，滚动再快也不会卡顿；配合懒加载后的延迟校正，长页面也能停得准。搜索高亮是同一类问题的镜像：把文本拆成「命中 / 未命中」片段，命中的片段用高亮样式包裹，命中数量一目了然。";
+function TextHighlightDemo() {
+  const [q, setQ] = useState("滚动");
+  const parts = useMemo(() => {
+    if (!q.trim()) return [{ t: HL_TEXT, hl: false }];
+    const esc = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`(${esc})`, "gi");
+    return HL_TEXT.split(re).map((t, i) => ({ t, hl: i % 2 === 1 }));
+  }, [q]);
+  const count = parts.filter((p) => p.hl).length;
+  return (
+    <div className="w-full max-w-xl space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Icon.Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400" size={13} />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="输入关键词高亮…"
+            aria-label="高亮关键词"
+            className="h-9 w-full rounded-lg border border-zinc-300 bg-white pl-8 pr-3 text-sm outline-none transition focus:border-zinc-900 focus:ring-4 focus:ring-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100 dark:focus:ring-white/10"
+          />
+        </div>
+        <span className="shrink-0 font-mono text-xs text-zinc-400 tabular-nums">{count} 处</span>
+      </div>
+      <p className="text-sm leading-7 text-zinc-700 [overflow-wrap:anywhere] dark:text-zinc-300">
+        {parts.map((p, i) =>
+          p.hl ? (
+            <mark key={i} className="rounded bg-zinc-900 px-1 py-px font-medium text-white dark:bg-white dark:text-zinc-900">
+              {p.t}
+            </mark>
+          ) : (
+            <span key={i}>{p.t}</span>
+          ),
+        )}
+      </p>
+    </div>
   );
 }

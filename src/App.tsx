@@ -295,12 +295,31 @@ export default function App() {
       if (!a) return;
       const id = decodeURIComponent(a.getAttribute("href")!.slice(1));
       if (!id) return;
-      const el = document.getElementById(id);
-      if (!el) return;
       e.preventDefault();
       history.pushState(null, "", `#${id}`);
-      if (id === "top") window.scrollTo({ top: 0 });
-      else smoothScrollTo(el);
+      if (id === "top") {
+        window.scrollTo({ top: 0 });
+        return;
+      }
+      const go = () => {
+        const el = document.getElementById(id);
+        if (el) smoothScrollTo(el);
+      };
+      // 章节是懒加载的：目标元素可能尚未挂载，轮询等它出现（最迟 2s）再跳
+      if (document.getElementById(id)) {
+        go();
+        return;
+      }
+      let tries = 0;
+      const timer = window.setInterval(() => {
+        tries++;
+        if (document.getElementById(id)) {
+          window.clearInterval(timer);
+          go();
+        } else if (tries >= 20) {
+          window.clearInterval(timer);
+        }
+      }, 100);
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
@@ -325,7 +344,7 @@ export default function App() {
 
   // 各章节不依赖任何应用状态(主题走 <html> 的 class,CSS 变体响应)。
   // 用 useMemo 固定元素树:侧边栏搜索每敲一个字、滚动高亮每次变化都只重渲染外壳,
-  // 不会连带重渲染 104 个 demo 组件。
+  // 不会连带重渲染 115 个 demo 组件。
   const sections = useMemo(
     () => (
       <ErrorBoundary>
