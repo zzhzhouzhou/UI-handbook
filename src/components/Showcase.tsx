@@ -208,7 +208,7 @@ export function Showcase({
             {mounted ? children : null}
           </div>
         ) : (
-          <pre className="max-h-[480px] min-h-[200px] overflow-auto bg-zinc-950 p-5 text-xs leading-6 text-zinc-300 sm:text-[12.5px]">
+          <pre className="max-h-[480px] min-h-[200px] overflow-auto bg-zinc-950 p-5 text-xs leading-6 text-zinc-300 dark:bg-zinc-900 sm:text-[12.5px]">
             <code data-lang={codeLang}>
               <Highlighted code={code ?? ""} />
             </code>

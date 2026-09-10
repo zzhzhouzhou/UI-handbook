@@ -327,7 +327,7 @@ export const inputCls =
 /* ------------------------------ Misc ------------------------------ */
 export function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-zinc-300 bg-zinc-50 px-1.5 font-mono text-[11px] font-medium text-zinc-600 shadow-[inset_0_-1px_0_rgb(0_0_0/0.15)] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+    <kbd className="inline-flex h-5 min-w-0 items-center justify-center rounded border border-zinc-300 bg-zinc-50 px-1.5 font-mono text-[11px] font-medium text-zinc-600 shadow-[inset_0_-1px_0_rgb(0_0_0/0.15)] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 [&>svg]:h-3 [&>svg]:w-3">
       {children}
     </kbd>
   );
