@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent as RMouseEvent, type ReactElement } from "react";
 import { Showcase, SectionHeader } from "../components/Showcase";
 import { Button, Icon, Kbd } from "../components/primitives";
+import { openCommandPalette } from "../components/CommandPalette";
 import { cn } from "../utils/cn";
 
 function NavbarDemo() {
@@ -317,101 +318,17 @@ function DropdownDemo() {
 }
 
 function CommandPaletteDemo() {
-  const [open, setOpen] = useState(false);
-  const [q, setQ] = useState("");
-  const [idx, setIdx] = useState(0);
-  const groups = [
-    { title: "建议", items: [["新建文档", Icon.File, "⌘N"], ["搜索文件", Icon.Search, "⌘P"], ["打开设置", Icon.Settings, "⌘,"]] },
-    { title: "导航", items: [["前往仪表盘", Icon.Home, "G D"], ["前往收件箱", Icon.Mail, "G I"], ["前往成员", Icon.User, "G M"]] },
-  ] as const;
-  const flat = groups.flatMap((g) => g.items.filter((it) => it[0].includes(q)));
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setOpen((o) => !o);
-      }
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, []);
-  // 打开时锁定背景滚动
-  useEffect(() => {
-    if (!open) return;
-    const ow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = ow;
-    };
-  }, [open]);
   return (
-    <>
-      <button onClick={() => setOpen(true)} className="flex h-9 w-64 items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-400 shadow-sm transition hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900">
-        <Icon.Search /> 搜索命令…
+    <div className="flex flex-col items-center gap-3">
+      <button type="button" onClick={openCommandPalette} className="flex h-10 w-72 max-w-full items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-400 shadow-sm transition hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900">
+        <Icon.Search /> 搜索组件、跳转章节
         <span className="ml-auto flex gap-0.5">
           <Kbd>⌘</Kbd>
           <Kbd>K</Kbd>
         </span>
       </button>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-          <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" className="relative z-10 w-full max-w-lg animate-scale-in overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
-            <div className="flex items-center gap-2 border-b border-zinc-200 px-4 dark:border-zinc-800">
-              <Icon.Search className="text-zinc-400" />
-              <input
-                autoFocus
-                value={q}
-                onChange={(e) => {
-                  setQ(e.target.value);
-                  setIdx(0);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "ArrowDown") setIdx((i) => Math.min(i + 1, flat.length - 1));
-                  if (e.key === "ArrowUp") setIdx((i) => Math.max(i - 1, 0));
-                  if (e.key === "Enter") setOpen(false);
-                }}
-                placeholder="输入命令或搜索…"
-                className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-zinc-400"
-              />
-              <Kbd>Esc</Kbd>
-            </div>
-            <div className="max-h-72 overflow-auto p-2">
-              {flat.length === 0 && <div className="py-10 text-center text-sm text-zinc-400">没有找到 “{q}”</div>}
-              {groups.map((g) => {
-                const its = g.items.filter((it) => it[0].includes(q));
-                if (!its.length) return null;
-                return (
-                  <div key={g.title} className="mb-1">
-                    <div className="px-2 py-1.5 text-xs text-zinc-400">{g.title}</div>
-                    {its.map((it) => {
-                      const I = it[1];
-                      const i = flat.indexOf(it);
-                      return (
-                        <button key={it[0]} onMouseEnter={() => setIdx(i)} onClick={() => setOpen(false)} className={cn("flex w-full items-center gap-2.5 rounded-md px-2 py-2 text-sm", i === idx && "bg-zinc-100 dark:bg-zinc-800")}>
-                          <I className="text-zinc-500" /> {it[0]}
-                          <span className="ml-auto font-mono text-[11px] text-zinc-400">{it[2]}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-4 border-t border-zinc-200 px-4 py-2 text-[11px] text-zinc-400 dark:border-zinc-800">
-              <span className="flex items-center gap-1">
-                <Kbd>↑</Kbd>
-                <Kbd>↓</Kbd> 导航
-              </span>
-              <span className="flex items-center gap-1">
-                <Kbd>↵</Kbd> 选择
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      <p className="text-xs text-zinc-400">点击上面的按钮，或直接按 ⌘K / Ctrl+K —— 打开的就是本站真实的全局命令面板（全屏模糊 + 居中）。</p>
+    </div>
   );
 }
 
@@ -829,26 +746,27 @@ useEffect(() => {
         description="现代应用的标志性功能：一个全局快捷键唤起的搜索框，可以执行命令、跳转页面、搜索内容。Linear、Notion、VS Code 都在用。试试按 ⌘K / Ctrl+K。"
         usage={["功能繁多的专业工具。", "替代深层菜单，让高级用户用键盘完成一切。"]}
         points={[
-          "全局 keydown 监听 metaKey/ctrlKey + k，preventDefault 阻止浏览器默认行为。",
-          "遮罩 bg-black/30 + backdrop-blur-sm；面板 pt-[15vh] 靠上显示。",
-          "命令按组渲染，过滤后计算扁平索引用于键盘高亮。",
-          "模糊搜索用 fuse.js 或 cmdk 库（cmdk 是最成熟的方案）。",
-          "底部显示键盘操作提示。",
+          "全局 keydown 监听 metaKey/ctrlKey + k，preventDefault 阻止浏览器默认行为；Esc 关闭。",
+          "遮罩 fixed inset-0 bg-black/40 + backdrop-blur-md 全屏毛玻璃；外层 flex items-center justify-center 让面板真正居中。",
+          "命令按组渲染，过滤后计算扁平索引用于键盘高亮，↑↓ 循环、Enter 跳转。",
+          "数据源直接用本站目录 NAV，选中后 close 再 smoothScrollTo 目标锚点。",
+          "底部显示键盘操作提示与结果计数。",
         ]}
         a11y={["打开时 autoFocus 输入框，关闭后恢复焦点。", "role=\"dialog\" aria-modal；列表 role=\"listbox\"。"]}
         code={`useEffect(() => {
   const k = (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setOpen(o => !o); }
-    if (e.key === "Escape") setOpen(false);
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); toggle(); }
+    if (e.key === "Escape") close();
   };
   window.addEventListener("keydown", k);
   return () => window.removeEventListener("keydown", k);
 }, []);
 
 {open && (
-  <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 pt-[15vh] backdrop-blur-sm" onClick={close}>
-    <div onClick={e => e.stopPropagation()} className="w-full max-w-lg animate-scale-in rounded-xl border bg-white shadow-2xl">
-      <input autoFocus placeholder="输入命令…" className="h-12 w-full px-4 outline-none" />
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={close}>
+    <div className="absolute inset-0 bg-black/40 backdrop-blur-md" />
+    <div onClick={e => e.stopPropagation()} className="relative z-10 w-full max-w-lg animate-scale-in rounded-2xl border bg-white shadow-2xl">
+      <input autoFocus placeholder="输入命令…" className="h-14 w-full px-4 outline-none" />
       <div className="max-h-72 overflow-auto p-2">{/* groups */}</div>
     </div>
   </div>

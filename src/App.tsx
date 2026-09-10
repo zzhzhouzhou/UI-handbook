@@ -1,7 +1,9 @@
 import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NAV, type NavGroup } from "./nav";
 import { Button, Icon, Kbd } from "./components/primitives";
+import { CommandPalette } from "./components/CommandPalette";
 import { cn } from "./utils/cn";
+import { smoothScrollTo } from "./utils/scroll";
 
 // 懒加载各章节：减少首屏 JS 体积，组件按需下载（Showcase 本身已有懒挂载机制配合）
 const Foundations = lazy(() => import("./sections/Foundations"));
@@ -61,26 +63,6 @@ function focusNavSearch(): boolean {
   target.focus();
   target.select();
   return target.getClientRects().length > 0;
-}
-
-/** 固定时长的快速滚动：超长页面用原生 smooth 会越来越慢，且懒挂载会改变页面高度导致停不准——逐帧重定位目标位置保证准确到达 */
-function smoothScrollTo(el: HTMLElement, duration = 450) {
-  const start = window.scrollY;
-  const startTime = performance.now();
-  const headerOffset = 80;
-  const step = (now: number) => {
-    const t = Math.min(1, (now - startTime) / duration);
-    const eased = 1 - Math.pow(1 - t, 3);
-    const targetTop = el.getBoundingClientRect().top + window.scrollY - headerOffset;
-    window.scrollTo({ top: start + (targetTop - start) * eased, behavior: "instant" });
-    if (t < 1) requestAnimationFrame(step);
-    else {
-      el.scrollIntoView({ behavior: "instant", block: "start" });
-      // 到达后再校正一次：懒挂载的相邻内容可能仍在改变布局高度
-      setTimeout(() => el.scrollIntoView({ behavior: "instant", block: "start" }), 350);
-    }
-  };
-  requestAnimationFrame(step);
 }
 
 function Sidebar({ groups, active, onNavigate, autoFocusSearch = false }: { groups: NavGroup[]; active: string; onNavigate: () => void; autoFocusSearch?: boolean }) {
@@ -149,7 +131,7 @@ function Sidebar({ groups, active, onNavigate, autoFocusSearch = false }: { grou
             </ul>
           </div>
         ))}
-        {groups.length === 0 && <p className="px-2 py-6 text-center text-xs text-zinc-400">没有匹配 “{q}” 的组件</p>}
+        {filtered.length === 0 && <p className="px-2 py-6 text-center text-xs text-zinc-400">没有匹配 “{q}” 的组件</p>}
       </div>
       <div className="border-t border-zinc-200 px-4 py-3 text-[11px] text-zinc-400 dark:border-zinc-800">
         <div className="flex items-center gap-3">
@@ -192,6 +174,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 export default function App() {
   const { dark, toggle } = useTheme();
   const [menu, setMenu] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
   const ids = useMemo(() => NAV.flatMap((g) => g.items.map((i) => i.id)), []);
   const active = useActiveId(ids);
 
@@ -211,7 +194,26 @@ export default function App() {
     return () => window.removeEventListener("keydown", k);
   }, []);
 
-  // 拦截全站锚点点击：固定 450ms 快速滚动 + 逐帧重定位，替代原生 smooth（长页太慢且停不准）
+  // ⌘K / Ctrl+K 唤起全局命令面板
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setCmdOpen((o) => !o);
+      }
+    };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, []);
+
+  // 章节内的命令面板 demo 按钮通过 openCommandPalette() 派发事件打开全局面板
+  useEffect(() => {
+    const open = () => setCmdOpen(true);
+    window.addEventListener("uih:open-command", open);
+    return () => window.removeEventListener("uih:open-command", open);
+  }, []);
+
+  // 拦截全站锚点点击：固定时长快速滚动 + 每帧重定位，替代原生 smooth（长页太慢且停不准）
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const a = (e.target as HTMLElement).closest?.("a[href^='#']") as HTMLAnchorElement | null;
@@ -223,7 +225,7 @@ export default function App() {
       e.preventDefault();
       history.pushState(null, "", `#${id}`);
       if (id === "top") window.scrollTo({ top: 0 });
-      else smoothScrollTo(el, 450);
+      else smoothScrollTo(el);
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
@@ -354,8 +356,8 @@ export default function App() {
             <h2 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">如何使用本站</h2>
             <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
-                { icon: <Icon.Search />, t: "快速搜索", d: "按 / 唤起侧边栏搜索，输入中文名或英文名即可过滤全部组件。" },
-                { icon: <Icon.Moon />, t: "深色模式", d: "右上角一键切换，跟随系统偏好并记忆选择；代码块始终为深色。" },
+                { icon: <Icon.Search />, t: "快速搜索", d: "按 / 过滤侧边栏，或按 ⌘K / Ctrl+K 唤起全局命令面板，输入中文名或英文名即可跳转。" },
+                { icon: <Icon.Moon />, t: "深色模式", d: "右上角一键切换，跟随系统偏好并记忆选择；代码块随主题同步深浅。" },
                 { icon: <Icon.Copy />, t: "复制代码", d: "每个组件的「代码」Tab 都有一键复制，示例可直接粘贴进项目。" },
                 { icon: <Icon.Play />, t: "可交互预览", d: "所有 demo 真实可交互，⟳ 可重新播放动画；手机端支持拖拽与滑动手势。" },
               ].map((c) => (
@@ -400,6 +402,8 @@ export default function App() {
           </footer>
         </main>
       </div>
+      {/* 全局命令面板：⌘K 唤起，全屏模糊 + 面板居中 */}
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </div>
   );
 }
