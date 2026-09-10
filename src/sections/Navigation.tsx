@@ -355,8 +355,9 @@ function CommandPaletteDemo() {
         </span>
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 p-4 pt-[15vh] backdrop-blur-sm" onClick={() => setOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" className="w-full max-w-lg animate-scale-in overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" className="relative z-10 w-full max-w-lg animate-scale-in overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
             <div className="flex items-center gap-2 border-b border-zinc-200 px-4 dark:border-zinc-800">
               <Icon.Search className="text-zinc-400" />
               <input

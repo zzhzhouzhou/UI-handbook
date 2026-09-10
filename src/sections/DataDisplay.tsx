@@ -267,7 +267,7 @@ function CodeBlockDemo() {
   return (
     <div className="w-full max-w-md space-y-6">
       <div className="overflow-hidden rounded-xl border border-zinc-300 bg-zinc-950 text-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
-        <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-2 dark:border-zinc-700">
+        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-2 dark:border-zinc-700">
           <div className="flex items-center gap-2">
             <span className="flex gap-1.5">
               <span className="h-2.5 w-2.5 rounded-full bg-zinc-700" />

@@ -83,8 +83,16 @@ function smoothScrollTo(el: HTMLElement, duration = 450) {
   requestAnimationFrame(step);
 }
 
-function Sidebar({ q, onSearch, groups, active, onNavigate, autoFocusSearch = false }: { q: string; onSearch: (v: string) => void; groups: NavGroup[]; active: string; onNavigate: () => void; autoFocusSearch?: boolean }) {
+function Sidebar({ groups, active, onNavigate, autoFocusSearch = false }: { groups: NavGroup[]; active: string; onNavigate: () => void; autoFocusSearch?: boolean }) {
+  const [q, setQ] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  // 本地过滤：搜索状态不泄漏到 App 层，App 不重渲染 → 滚动位置稳定
+  const filtered = useMemo(() => {
+    if (!q.trim()) return groups;
+    const s = q.trim().toLowerCase();
+    return groups.map((g) => ({ ...g, items: g.items.filter((i) => i.label.toLowerCase().includes(s) || i.en.toLowerCase().includes(s) || g.title.includes(s)) })).filter((g) => g.items.length);
+  }, [q, groups]);
   // 当前浏览的章节实时滚动到侧边栏列表中部
   useEffect(() => {
     const container = listRef.current;
@@ -105,7 +113,7 @@ function Sidebar({ q, onSearch, groups, active, onNavigate, autoFocusSearch = fa
             data-nav-search
             autoFocus={autoFocusSearch}
             value={q}
-            onChange={(e) => onSearch(e.target.value)}
+            onChange={(e) => setQ(e.target.value)}
             placeholder="搜索组件…"
             autoComplete="off"
             className="h-8 w-full rounded-md border border-zinc-200 bg-white pl-8 pr-8 text-sm outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:focus:border-white"
@@ -116,7 +124,7 @@ function Sidebar({ q, onSearch, groups, active, onNavigate, autoFocusSearch = fa
         </div>
       </div>
       <div ref={listRef} className="relative flex-1 overflow-y-auto px-4 pb-8">
-        {groups.map((g) => (
+        {filtered.map((g) => (
           <div key={g.id} className="mb-5">
             <a href={`#${g.id}`} onClick={onNavigate} className="mb-1.5 flex items-baseline gap-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
               <span className="font-mono">{g.index}</span> {g.title}
@@ -183,16 +191,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 
 export default function App() {
   const { dark, toggle } = useTheme();
-  const [q, setQ] = useState("");
   const [menu, setMenu] = useState(false);
   const ids = useMemo(() => NAV.flatMap((g) => g.items.map((i) => i.id)), []);
   const active = useActiveId(ids);
-
-  const filtered = useMemo(() => {
-    if (!q.trim()) return NAV;
-    const s = q.trim().toLowerCase();
-    return NAV.map((g) => ({ ...g, items: g.items.filter((i) => i.label.toLowerCase().includes(s) || i.en.toLowerCase().includes(s) || g.title.includes(s)) })).filter((g) => g.items.length);
-  }, [q]);
 
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -243,7 +244,7 @@ export default function App() {
     };
   }, [menu]);
 
-  const sidebar = <Sidebar q={q} onSearch={setQ} groups={filtered} active={active} onNavigate={() => setMenu(false)} />;
+  const sidebar = <Sidebar groups={NAV} active={active} onNavigate={() => setMenu(false)} />;
 
   // 各章节不依赖任何应用状态(主题走 <html> 的 class,CSS 变体响应)。
   // 用 useMemo 固定元素树:侧边栏搜索每敲一个字、滚动高亮每次变化都只重渲染外壳,
@@ -303,9 +304,9 @@ export default function App() {
         {/* Sidebar mobile */}
         {menu && (
           <div className="fixed inset-0 top-14 z-30 lg:hidden">
-            <div className="absolute inset-0 bg-black/30" onClick={() => setMenu(false)} />
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setMenu(false)} />
             <aside className="absolute inset-y-0 left-0 w-72 animate-slide-in-left bg-white pt-4 shadow-2xl dark:bg-zinc-950">
-              <Sidebar q={q} onSearch={setQ} groups={filtered} active={active} onNavigate={() => setMenu(false)} autoFocusSearch />
+              <Sidebar groups={NAV} active={active} onNavigate={() => setMenu(false)} autoFocusSearch />
             </aside>
           </div>
         )}
