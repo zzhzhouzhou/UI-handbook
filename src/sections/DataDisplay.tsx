@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Showcase, SectionHeader, Highlighted } from "../components/Showcase";
 import { Button, Icon, Avatar, Kbd } from "../components/primitives";
 import { cn } from "../utils/cn";
@@ -406,12 +407,15 @@ function KanbanDemo() {
           </div>
         </div>
       ))}
-      {/* 跟随指针的拖拽幻影 */}
-      {dragging && (
-        <div className="pointer-events-none fixed z-50 w-40 -translate-x-1/2 -translate-y-1/2 rotate-2 rounded-lg border border-zinc-200 bg-white p-3 text-sm shadow-xl dark:border-zinc-700 dark:bg-zinc-800" style={{ left: dragging.x, top: dragging.y }}>
-          {dragging.item}
-        </div>
-      )}
+      {/* 跟随指针的拖拽幻影：portal 到 body——章节 article 的 content-visibility 会成为 fixed 后代的包含块，
+          不挪出去的话视口坐标会被错误地叠加 article 的偏移，幻影位置大幅跑偏 */}
+      {dragging &&
+        createPortal(
+          <div className="pointer-events-none fixed z-50 w-40 -translate-x-1/2 -translate-y-1/2 rotate-2 rounded-lg border border-zinc-200 bg-white p-3 text-sm shadow-xl dark:border-zinc-700 dark:bg-zinc-800" style={{ left: dragging.x, top: dragging.y }}>
+            {dragging.item}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -720,7 +724,7 @@ export default function DataDisplay() {
         <TreeDemo />
       </Showcase>
 
-      <Showcase id="kanban" title="看板（拖放）" en="Kanban · Drag & Drop" level="高级" description="跨列拖动卡片。用 Pointer Events 实现，桌面鼠标与手机触屏都能拖；拖动时显示跟随指针的幻影卡片，目标列边框高亮。" usage={["任务管理、销售漏斗、招聘流程。"]} points={["卡片 onPointerDown + setPointerCapture 记录来源，后续 move/up 都派发到卡片，拖出窗口也能收到。", "onPointerMove 里用 elementFromPoint 思路（比对列矩形的 getBoundingClientRect）判断悬停在哪列，刷新高亮。", "松手（onPointerUp）时把数据从源列移到目标列；卡片加 touch-none 防止触摸时触发页面滚动。", "复杂需求（列内排序、多拖、自动滚动）请用 @dnd-kit/core，其 PointerSensor 同样基于 Pointer Events。"]} code={`// 卡片
+      <Showcase id="kanban" title="看板（拖放）" en="Kanban · Drag & Drop" level="高级" description="跨列拖动卡片。用 Pointer Events 实现，桌面鼠标与手机触屏都能拖；拖动时显示跟随指针的幻影卡片，目标列边框高亮。" usage={["任务管理、销售漏斗、招聘流程。"]} points={["卡片 onPointerDown + setPointerCapture 记录来源，后续 move/up 都派发到卡片，拖出窗口也能收到。", "onPointerMove 里用 elementFromPoint 思路（比对列矩形的 getBoundingClientRect）判断悬停在哪列，刷新高亮。", "幻影卡片要 createPortal 到 document.body 再 fixed——祖先有 content-visibility / transform 时会成为 fixed 的包含块，视口坐标会全部跑偏。", "松手（onPointerUp）时把数据从源列移到目标列；卡片加 touch-none 防止触摸时触发页面滚动。", "复杂需求（列内排序、多拖、自动滚动）请用 @dnd-kit/core，其 PointerSensor 同样基于 Pointer Events。"]} code={`// 卡片
 <div onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setDrag({ from: col, item }); }}
      onPointerMove={(e) => setDrag(d => d && { ...d, x: e.clientX, y: e.clientY })}
      onPointerUp={drop} className="touch-none cursor-grab">…</div>

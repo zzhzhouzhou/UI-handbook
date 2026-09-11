@@ -920,7 +920,7 @@ const hoverable = matchMedia("(hover: hover)").matches;
         level="高级"
         description="长文右侧的小型目录：滚动时自动高亮当前阅读的章节，点击目录项平滑跳到对应内容。本站侧边栏的「当前位置跟随」就是同一套原理。"
         usage={["长文档、博客、帮助中心、组件手册。", "内容 ≥ 3 屏时才有必要。"]}
-        points={["核心是一个滚动监听 + 「参考线」判定：取最后一个顶边越过参考线的章节为当前项。", "scroll 事件用 rAF 合并成每帧最多一次计算，避免高频 setState。", "TOC 项 aria-current=\"location\"；点击用 scrollIntoView({ block: \"start\" })。", "监听容器自身的 scroll（这里是内部可滚动 div），不是 window。", "生产环境可用 IntersectionObserver 代替 scroll 监听，两者结果等价。"]}
+        points={["核心是一个滚动监听 + 「参考线」判定：取最后一个顶边越过参考线的章节为当前项。", "scroll 事件用 rAF 合并成每帧最多一次计算，避免高频 setState。", "TOC 项 aria-current=\"location\"；点击跳转要用容器自身的 scrollTo——scrollIntoView 会连带滚动所有祖先容器，整页跟着跳。", "监听容器自身的 scroll（这里是内部可滚动 div），不是 window。", "生产环境可用 IntersectionObserver 代替 scroll 监听，两者结果等价。"]}
         a11y={["nav + aria-label=\"页内目录\"；当前项 aria-current 标记。", "目录项是 button，键盘可 Tab 聚焦、Enter 跳转。"]}
         code={`const onScroll = () => {
   if (raf) return;
@@ -984,8 +984,14 @@ function ScrollSpyTocDemo() {
   }, []);
 
   const jump = (i: number) => {
-    const child = scrollerRef.current?.children[i] as HTMLElement | undefined;
-    child?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const el = scrollerRef.current;
+    if (!el) return;
+    const child = el.children[i] as HTMLElement | undefined;
+    if (!child) return;
+    // 只滚动内部容器：scrollIntoView 会连带滚动所有祖先滚动容器（主页面也会跳）。
+    // 目标位置 = 当前 scrollTop + 子元素与容器的视口 top 差（不依赖 offsetParent 链）
+    const top = el.scrollTop + child.getBoundingClientRect().top - el.getBoundingClientRect().top;
+    el.scrollTo({ top, behavior: "smooth" });
   };
 
   return (
